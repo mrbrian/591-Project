@@ -75,6 +75,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>lodepng</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -112,7 +113,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="algebra.cpp" />
-    <ClCompile Include="lodepng.cpp" />
+    <ClCompile Include="lodepng\lodepng.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="polyroots.cpp" />
@@ -120,7 +121,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algebra.h" />
-    <ClInclude Include="lodepng.h" />
+    <ClInclude Include="lodepng\lodepng.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="polyroots.h" />
     <ClInclude Include="scene.h" />
