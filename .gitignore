@@ -1,0 +1,12 @@
+moc*.*
+*.o
+a4
+a4.pro
+astro
+Makefile.*
+Makefile
+a4.pro.*
+debug
+release
+output.png
+*.psd

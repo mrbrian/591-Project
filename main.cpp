@@ -1,5 +1,5 @@
-#include <QImage>
-#include <QColor>
+//#include <QImage>
+//#include <QColor>
 #include "algebra.h"
 #include "scene.h"
 #include <vector>
@@ -17,7 +17,7 @@ double clamp(double min, double max, double in)
 }
 
 // reflection tri ball
-void *SetupScene1(Scene *s, int width, int height)
+void SetupScene1(Scene *s, int width, int height)
 {
     Scene &scene = *s;
     Camera cam = Camera();
@@ -61,7 +61,7 @@ void *SetupScene1(Scene *s, int width, int height)
 }
 
 // pretty tri ball + checker
-void *SetupScene2(Scene *s, int width, int height)
+void SetupScene2(Scene *s, int width, int height)
 {
     Scene &scene = *s;
     Camera cam = Camera();
@@ -100,7 +100,7 @@ void *SetupScene2(Scene *s, int width, int height)
 }
 
 // smiley
-void *SetupScene3(Scene *s, int width, int height)
+void SetupScene3(Scene *s, int width, int height)
 {
     Scene &scene = *s;
     Camera cam = Camera();
@@ -149,7 +149,7 @@ void *SetupScene3(Scene *s, int width, int height)
 }
 
 // misc shapes
-void *SetupScene4(Scene *s, int width, int height)
+void SetupScene4(Scene *s, int width, int height)
 {
     Scene &scene = *s;
     Camera cam = Camera();
@@ -192,8 +192,8 @@ void *SetupScene4(Scene *s, int width, int height)
 int main(int argc, char *argv[])
 {
     // currently unused parameters
-    Q_UNUSED(argc);
-    Q_UNUSED(argv);
+//    Q_UNUSED(argc);
+//    Q_UNUSED(argv);
 
     Scene scene;
 
@@ -212,11 +212,11 @@ int main(int argc, char *argv[])
     SetupScene3(&scene, width, height);
 
     // create new image
-    QImage image(width, height, QImage::Format_RGB32);
+    //QImage image(width, height, QImage::Format_RGB32);
 
     Colour * resultImg = scene.Render();
 
-    for (int x = 0; x < width; x++)
+    /*for (int x = 0; x < width; x++)
     {
         for (int y = 0; y < height; y++)
         {
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
     }
     // save to file
     image.save(outputStr);
-
+	*/
     // application successfully returned
     return 0;
 }
