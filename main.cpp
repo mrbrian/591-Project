@@ -1,11 +1,11 @@
-//#include <QImage>
-//#include <QColor>
+#include "lodepng.h"
 #include "algebra.h"
 #include "scene.h"
 #include <vector>
+#include <iostream>
 
-#define DEF_WIDTH   500
-#define DEF_HEIGHT  500
+#define DEF_WIDTH   200
+#define DEF_HEIGHT  200
 
 double clamp(double min, double max, double in)
 {
@@ -191,10 +191,6 @@ void SetupScene4(Scene *s, int width, int height)
 
 int main(int argc, char *argv[])
 {
-    // currently unused parameters
-//    Q_UNUSED(argc);
-//    Q_UNUSED(argv);
-
     Scene scene;
 
     // image width and height
@@ -212,26 +208,33 @@ int main(int argc, char *argv[])
     SetupScene3(&scene, width, height);
 
     // create new image
-    //QImage image(width, height, QImage::Format_RGB32);
+	const char *filename = "out.png";
 
-    Colour * resultImg = scene.Render();
+	std::vector<unsigned char> image;
+	image.resize(width * height * 4);
 
-    /*for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            Colour &c = resultImg[x + y * scene.cam.imgWidth];
-            // clamp rgb values [0,1]
-            uint intClr = qRgb(clamp(0,1,c.R()) * 255,
-                               clamp(0,1,c.G()) * 255,
-                               clamp(0,1,c.B()) * 255);
-            // set pixel value
-            image.setPixel(x, y, intClr);
-        }
-    }
+    Colour *resultImg = scene.Render();
+
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			int idx = x + y * scene.cam.imgWidth;
+			Colour &c = resultImg[idx];
+			// clamp rgb values [0,1]
+			image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
+			image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
+			image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
+			image[4 * idx + 3] = 255;
+		}
+	}
     // save to file
-    image.save(outputStr);
-	*/
+	unsigned int error = lodepng::encode(filename, image, width, height);
+
+	/*if there's an error, display it*/
+	if (error) 
+		printf("error %u: %s\n", error, lodepng_error_text(error));
+
     // application successfully returned
     return 0;
 }
