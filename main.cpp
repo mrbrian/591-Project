@@ -16,176 +16,111 @@ double clamp(double min, double max, double in)
     return in;
 }
 
-// reflection tri ball
-void SetupScene1(Scene *s, int width, int height)
+// source: http://www.graphics.cornell.edu/online/box/data.html
+void SetupCornellBox(Scene *s, int width, int height)
 {
     Scene &scene = *s;
     Camera cam = Camera();
 
     cam.imgWidth = width;
     cam.imgHeight = height;
-    cam.lookAt = Point3D(0,0,8);
-    cam.position = Point3D(0,0,0);
+    cam.lookAt = Point3D(0, 0, -1);
+    cam.position = Point3D(0, 0, 0);
+    //cam.fov = 63.439966589479205;
 
     scene.cam = cam;
     scene.imgPlane = new Plane(Point3D(-0.5,0.5,1), Point3D(-0.5,-0.5,1), Point3D(0.5,-0.5,1), Point3D(0.5,0.5,1));
 
-    Material *checker = new ChromeMaterial();
-    Material *mat1   = new Material(Colour(0,0,0), Colour(1,0.25,0.1), Colour(1,1,1), 1000,  Colour(0.5,0.5,0.5));
-    Material *mat2 = new Material(Colour(0,0,0), Colour(0.05,0.6,0.95), Colour(1,1,1), 100,  Colour(0.5,0.5,0.5));
-    Material *mat3  = new Material(Colour(0,0,0), Colour(0.7,0.95,.13), Colour(1,1,1), 10, 0.5 * Colour(0.7,0.95,.13));
+    Material *mat_ceil = new Material(Colour(0,0,0), Colour(1,0.25,0.1), Colour(1,1,1), 1000,  Colour(0.5,0.5,0.5));
+    Material *mat_grn = new Material(Colour(0,0,0), Colour(0.05,0.6,0.95), Colour(1,1,1), 100,  Colour(0.5,0.5,0.5));
+    Material *mat_red = new Material(Colour(0,0,0), Colour(0.7,0.95,.13), Colour(1,1,1), 10, 0.5 * Colour(0.7,0.95,.13));
 
-    Quad *q = new Quad(Point3D(-1,0,1),Point3D(-1,0,-1),Point3D(1,0,-1),Point3D(1,0,1), checker);
-    q->Transform( Matrix4x4::translation(Vector3D(0,-1,0)) * Matrix4x4::scaling(Vector3D(2000,2000,2000)));
-    Sphere *sphere1 = new Sphere(Point3D(-2,0,6), 1, mat1);
-    Sphere *sphere2 = new Sphere(Point3D(0,0,10), 1, mat2);
-    Sphere *sphere3 = new Sphere(Point3D(2,0,6), 1, mat3);
-    scene.objects.push_back(sphere1);
-    scene.objects.push_back(sphere2);
-    scene.objects.push_back(sphere3);
-    scene.objects.push_back(q);
+    //Quad *q = new Quad(Point3D(-1,0,1),Point3D(-1,0,-1),Point3D(1,0,-1),Point3D(1,0,1), checker);
+    //q->Transform( Matrix4x4::translation(Vector3D(0,-1,0)) * Matrix4x4::scaling(Vector3D(2000,2000,2000)));
+    //scene.objects.push_back(q);
 
     Light *light = new Light(Point3D(0,5,0), Colour(0.1,0.1,0.1), Colour(0.5,0.5,0.5), Colour(0,0,0));
     scene.lights.push_back(light);
-    Light *light2 = new Light(Point3D(10,15,1), Colour(0.1,0.1,0.1), Colour(0.6,0.6,0.5), Colour(1,1,1));
+/*    Light *light2 = new Light(Point3D(10,15,1), Colour(0.1,0.1,0.1), Colour(0.6,0.6,0.5), Colour(1,1,1));
     scene.lights.push_back(light2);
     Light *light3 = new Light(Point3D(-20,20,40), Colour(0.1,0.1,0.1), Colour(0.25,0.25,0.35), Colour(1,1,1));
-    scene.lights.push_back(light3);
+    scene.lights.push_back(light3);*/
 
     scene.Transform(
                 Matrix4x4::translation(Vector3D(cam.lookAt)) *
                 Matrix4x4::rotation(30*M_PI/180,'y') *
                 Matrix4x4::rotation(-35*M_PI/180,'x') *
-                Matrix4x4::translation(-Vector3D(cam.lookAt))
-                    );
-}
+                Matrix4x4::translation(-Vector3D(cam.lookAt)));
 
-// pretty tri ball + checker
-void SetupScene2(Scene *s, int width, int height)
-{
-    Scene &scene = *s;
-    Camera cam = Camera();
+    // Ceiling
+    Triangle *tri_1 = new Triangle(
+      Point3D(2.75, 2.75, -10.5),
+      Point3D(2.75, 2.75, -5),
+      Point3D(-2.75, 2.75, -5),
+      Point3D(1, 1, 1), *mat_ceil);
 
-    cam.imgWidth = width;
-    cam.imgHeight = height;
-    cam.lookAt = Point3D(0,0,1);
-    cam.position = Point3D(0,0,-1);
+    Triangle *tri_2 = new Triangle(
+      Point3D(-2.75, 2.75, -10.5),
+      Point3D(2.75, 2.75, -10.5),
+      Point3D(-2.75, 2.75, -5),
+      Point3D(1, 1, 1), mat_ceil);
 
-    scene.cam = cam;
-    scene.imgPlane = new Plane(Point3D(-0.5,0.5,0), Point3D(-0.5,-0.5,0), Point3D(0.5,-0.5,0), Point3D(0.5,0.5,0));
+    // Green wall on right
+    Triangle *tri_3 = new Triangle(
+      Point3D(2.75, 2.75, -5),
+      Point3D(2.75, 2.75, -10.5),
+      Point3D(2.75, -2.75, -10.5),
+      Point3D(0.0, 0.5, 0.0), );
 
-    Material *checker = new CheckerMaterial(Colour(0,0,0), Colour(0.2,0.2,0.2), Colour(0.5,0.5,0.5), 100,  Colour(0.4,0.4,0.4), 0.4);
-    Material *red   = new Material(Colour(0,0,0), Colour(1,0,0), Colour(1,1,1), 1000,  Colour(0.5,0.5,0.5));
-    Material *green = new Material(Colour(0,0,0), Colour(0,1,0), Colour(1,1,1), 100,  Colour(0.5,0.5,0.5));
-    Material *blue  = new Material(Colour(0,0,0), Colour(0,0,1), Colour(1,1,1), 10,  Colour(0.5,0.5,0.5));
 
-    Quad *q1 = new Quad(Point3D(-10,0,10), Point3D(-10,0,-10), Point3D(10,0,-10), Point3D(10,0,10), checker);
-    Matrix4x4 m = Matrix4x4::translation(Vector3D(0,-1,0)) * Matrix4x4::scaling(Vector3D(2,2,2));
-    q1->Transform(m);
-    scene.objects.push_back(q1);
+     Triangle *tri_4 = new Triangle(
+      Point3D(2.75, -2.75, -5),
+      Point3D(2.75, 2.75, -5),
+      Point3D(2.75, -2.75, -10.5),
+      Point3D(0.0, 0.5, 0.0));
 
-    Sphere *sphere1 = new Sphere(Point3D(-2,0,5), 1,red);
-    Sphere *sphere2 = new Sphere(Point3D(0,0,6), 1, green);
-    Sphere *sphere3 = new Sphere(Point3D(2.5,0,7), 1, blue);
-    scene.objects.push_back(sphere1);
-    scene.objects.push_back(sphere2);
-    scene.objects.push_back(sphere3);
 
-    Light *light = new Light(Point3D(0,2,0), Colour(0.1,0.1,0.1), Colour(0.5,0.5,0.5), Colour(0,0,0));
-    scene.lights.push_back(light);
-    Light *light2 = new Light(Point3D(10,15,1), Colour(0.1,0.1,0.1), Colour(0.6,0.6,0.5), Colour(1,1,1));
-    scene.lights.push_back(light2);
-    Light *light3 = new Light(Point3D(-20,20,40), Colour(0.1,0.1,0.1), Colour(0.25,0.25,0.35), Colour(1,1,1));
-    scene.lights.push_back(light3);
-}
+    // Red wall on left
+     Triangle *tri_5 = new Triangle(
+      Point3D(-2.75, -2.75, -5),
+      Point3D(-2.75, -2.75, -10.5),
+      Point3D(-2.75, 2.75, -10.5),
+      Point3D(0.5, 0.0, 0.0));
 
-// smiley
-void SetupScene3(Scene *s, int width, int height)
-{
-    Scene &scene = *s;
-    Camera cam = Camera();
+     Triangle *tri_6 = new Triangle(
+      Point3D(-2.75, 2.75, -5),
+      Point3D(-2.75, -2.75, -5),
+      Point3D(-2.75, 2.75, -10.5),
+      Point3D(0.5, 0.0, 0.0));
 
-    cam.imgWidth = width;
-    cam.imgHeight = height;
-    cam.lookAt = Point3D(0,0,1);
-    cam.position = Point3D(0,0,-1);
 
-    scene.cam = cam;
-    scene.imgPlane = new Plane(Point3D(-0.5,0.5,0), Point3D(-0.5,-0.5,0), Point3D(0.5,-0.5,0), Point3D(0.5,0.5,0));
-    Colour amb = Colour(0.4,0.0,0.4);
-    Material *yellow   = new Material(amb, Colour(1,1,0), Colour(1,1,1), 100,  Colour(0.1,0.1,0.1));
-    Material *black = new Material(amb, Colour(0,0,0), Colour(1,1,1), 10,  Colour(0.5,0.5,0.5));
-    Material *white = new Material(amb, Colour(1,1,1), Colour(1,1,1), 10,  Colour(0.2,0.2,0.2));
+    // Floor
+     Triangle *tri_6 = new Triangle(
+      Point3D(2.75, -2.75, -5),
+      Point3D(2.75, -2.75, -10.5),
+      Point3D(-2.75, -2.75, -10.5),
+      Point3D(0.6, 0.6, 0.6));
 
-    scene.objects.push_back(new Quad(Point3D(-100,100,2), Point3D(-100,-100,2), Point3D(100,-100,2), Point3D(100,100,2), yellow));
+     Triangle *tri_6 = new Triangle(
+      Point3D(-2.75, -2.75, -5),
+      Point3D(2.75, -2.75, -5),
+      Point3D(-2.75, -2.75, -10.5),
+      Point3D(0.6, 0.6, 0.6));
 
-    scene.objects.push_back( new Sphere(Point3D(-3,4,     1), 2,white));
-    scene.objects.push_back( new Sphere(Point3D(3,4,      1), 2, white));
+    // Back wall
+    Quad *q = new Quad(
+        Point3D(0, 0, 1),
+        Point3D(0, 0, -10.5),
+        Point3D(0.6, 0.6, 0.6),
+        Point3D(0.6, 0.6, 0.6));
 
-    scene.objects.push_back( new Sphere(Point3D(-2.5,4,-.5),  1,black));
-    scene.objects.push_back( new Sphere(Point3D(2.5, 4,-.5),  1,black));
-
-    scene.objects.push_back( new Sphere(Point3D(-4,-1,1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(-3,-2,1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(-2,-3,1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(-1,-3.15,1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(0,-3.15, 1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(1,-3.15, 1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(4,-1, 1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(3,-2, 1.5), 1, white));
-    scene.objects.push_back( new Sphere(Point3D(2,-3, 1.5), 1, white));
-
-    scene.lights.push_back(new Light(Point3D(1,5,-10), Colour(0.1,0.1,0.1),  Colour(0.4,0.3,0.3), Colour(1,1,1)));
-    scene.lights.push_back(new Light(Point3D(0,6,-10), Colour(0.1,0.1,0.1),  Colour(0.3,0.4,0.3), Colour(1,1,1)));
-    scene.lights.push_back(new Light(Point3D(-1,5,-10), Colour(0.1,0.1,0.1), Colour(0.3,0.3,0.4), Colour(1,1,1)));
-    scene.lights.push_back(new Light(Point3D(-10,10,1.5), Colour(0,0,0), Colour(0.1,0.1,0.1), Colour(1,1,1)));
-
-    scene.Transform(
-                Matrix4x4::translation(Vector3D(0,0,17)) *
-                Matrix4x4::rotation(2*M_PI/180, 'x') *
-                Matrix4x4::rotation(3*M_PI/180, 'y') *
-                Matrix4x4::rotation(5*M_PI/180, 'z')
-                    );
-}
-
-// misc shapes
-void SetupScene4(Scene *s, int width, int height)
-{
-    Scene &scene = *s;
-    Camera cam = Camera();
-
-    cam.imgWidth = width;
-    cam.imgHeight = height;
-    cam.lookAt = Point3D(1,0,12.3);
-    cam.position = Point3D(0,0,-1);
-
-    scene.cam = cam;
-    scene.imgPlane = new Plane(Point3D(-0.5,0.5,0), Point3D(-0.5,-0.5,0), Point3D(0.5,-0.5,0), Point3D(0.5,0.5,0));
-
-    Material *black = new Material(Colour(0,0,0), Colour(0.1, 0.1,0.1), Colour(0.1,0.2,0.2), 10, Colour(0.1,0.1,0.1));
-    Material *mat1  = new Material(Colour(0,0,0), Colour(0.43,0.95,.5), Colour(1,1,1), 10, 0.5 * Colour(0.7,0.95,.13));
-    Material *mat2  = new Material(Colour(0,0,0), Colour(0.92,0.02,.71), Colour(1,1,1), 10, 0.5 * Colour(0.92,0.02,.71));
-    Material *mat3  = new Material(Colour(0,0,0), Colour(0.84,0.95,0.99), Colour(1,1,1), 10, 0.5 * Colour(0.84,0.95,0.99));
-
-    scene.objects.push_back(new Quad(Point3D(-1000,-1,1000),Point3D(-1000,-1,-1000),Point3D(1000,-1,-1000),Point3D(1000,-1,1000), black));
-    Pyramid *p = new Pyramid(Point3D(0,0,0), 1, mat1);
-    Cube *c = new Cube(Point3D(-4,4,30), 4, mat2);
-    scene.objects.push_back(p);
-    scene.objects.push_back(c);
-
-    scene.objects.push_back(new Sphere(Point3D(3,0,12), 3, mat3));
-
-    scene.lights.push_back(new Light(Point3D(-5,20,20), Colour(0.1,0,0.1), Colour(0.5,0.7,0.5), Colour(1,1,1)));
-    scene.lights.push_back(new Light(Point3D(25,10,50), Colour(), Colour(0.5,0.5,0.7), Colour(1,1,1)));
-    p->Transform(Matrix4x4::translation(Vector3D(-1,0,7)) * Matrix4x4::rotation(45*M_PI/180,'y'));
-
-    scene.Transform(
-                Matrix4x4::translation(Vector3D(cam.lookAt)) *
-                Matrix4x4::rotation(5*M_PI/180,'z') *
-                Matrix4x4::rotation(-15*M_PI/180,'x') *
-                Matrix4x4::translation(-Vector3D(cam.lookAt))
-                    );
-    scene.lights.push_back(new Light(Point3D(0,5,0), Colour(0.1,0.1,0.1), Colour(0.7,0.5,0.5), Colour(0,0,0)));
+    scene.objects.push_back(tri_1);
+    scene.objects.push_back(tri_2);
+    scene.objects.push_back(tri_3);
+    scene.objects.push_back(tri_4);
+    scene.objects.push_back(tri_5);
+    scene.objects.push_back(tri_6);
+    scene.objects.push_back(q);
 
 }
 
@@ -205,7 +140,7 @@ int main(int argc, char *argv[])
         outputStr = argv[3];
     }
 
-    SetupScene3(&scene, width, height);
+    SetupScene1(&scene, width, height);
 
     // create new image
 	const char *filename = "out.png";
