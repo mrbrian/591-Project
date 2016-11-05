@@ -26,102 +26,64 @@ void SetupCornellBox(Scene *s, int width, int height)
     cam.imgHeight = height;
     cam.lookAt = Point3D(0, 0, -1);
     cam.position = Point3D(0, 0, 0);
-    //cam.fov = 63.439966589479205;
 
     scene.cam = cam;
-    scene.imgPlane = new Plane(Point3D(-0.5,0.5,1), Point3D(-0.5,-0.5,1), Point3D(0.5,-0.5,1), Point3D(0.5,0.5,1));
+	float img_plane_w = 0.5f;
+    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w,-img_plane_w, -1), Point3D(img_plane_w,-img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
 
-    Material *mat_ceil = new Material(Colour(0,0,0), Colour(1,0.25,0.1), Colour(1,1,1), 1000,  Colour(0.5,0.5,0.5));
-    Material *mat_grn = new Material(Colour(0,0,0), Colour(0.05,0.6,0.95), Colour(1,1,1), 100,  Colour(0.5,0.5,0.5));
-    Material *mat_red = new Material(Colour(0,0,0), Colour(0.7,0.95,.13), Colour(1,1,1), 10, 0.5 * Colour(0.7,0.95,.13));
+    Material *mat_ceil = new Material(Colour(0,0,0), Colour(1, 1, 1), Colour(1,1,1), 1000, Colour(0, 0, 0));
+    Material *mat_grn = new Material(Colour(0,0,0), Colour(0, 0.5f, 0), Colour(1,1,1), 100, Colour(0, 0, 0));
+	Material *mat_red = new Material(Colour(0, 0, 0), Colour(0.5f, 0, 0), Colour(1, 1, 1), 10, Colour(0, 0, 0));
+	Material *mat_floor = new Material(Colour(0, 0, 0), Colour(0.6f, 0.6f, 0.6f), Colour(1, 1, 1), 10, Colour(0, 0, 0));
 
-    //Quad *q = new Quad(Point3D(-1,0,1),Point3D(-1,0,-1),Point3D(1,0,-1),Point3D(1,0,1), checker);
-    //q->Transform( Matrix4x4::translation(Vector3D(0,-1,0)) * Matrix4x4::scaling(Vector3D(2000,2000,2000)));
-    //scene.objects.push_back(q);
-
-    Light *light = new Light(Point3D(0,5,0), Colour(0.1,0.1,0.1), Colour(0.5,0.5,0.5), Colour(0,0,0));
+    Light *light = new Light(Point3D(0, 2.65, -8), Colour(0.1,0.1,0.1), Colour(0.5,0.5,0.5), Colour(0,0,0));
     scene.lights.push_back(light);
-/*    Light *light2 = new Light(Point3D(10,15,1), Colour(0.1,0.1,0.1), Colour(0.6,0.6,0.5), Colour(1,1,1));
-    scene.lights.push_back(light2);
-    Light *light3 = new Light(Point3D(-20,20,40), Colour(0.1,0.1,0.1), Colour(0.25,0.25,0.35), Colour(1,1,1));
-    scene.lights.push_back(light3);*/
-
-    scene.Transform(
-                Matrix4x4::translation(Vector3D(cam.lookAt)) *
-                Matrix4x4::rotation(30*M_PI/180,'y') *
-                Matrix4x4::rotation(-35*M_PI/180,'x') *
-                Matrix4x4::translation(-Vector3D(cam.lookAt)));
 
     // Ceiling
-    Triangle *tri_1 = new Triangle(
-      Point3D(2.75, 2.75, -10.5),
-      Point3D(2.75, 2.75, -5),
-      Point3D(-2.75, 2.75, -5),
-      Point3D(1, 1, 1), *mat_ceil);
+	Quad *q_1 = new Quad(
+		Point3D(2.75, 2.75, -10.5),
+		Point3D(2.75, 2.75, -5),
+		Point3D(-2.75, 2.75, -5),
+		Point3D(-2.75, 2.75, -10.5),
+		mat_ceil);
 
-    Triangle *tri_2 = new Triangle(
-      Point3D(-2.75, 2.75, -10.5),
-      Point3D(2.75, 2.75, -10.5),
-      Point3D(-2.75, 2.75, -5),
-      Point3D(1, 1, 1), mat_ceil);
+	scene.objects.push_back(q_1);
 
-    // Green wall on right
-    Triangle *tri_3 = new Triangle(
-      Point3D(2.75, 2.75, -5),
-      Point3D(2.75, 2.75, -10.5),
-      Point3D(2.75, -2.75, -10.5),
-      Point3D(0.0, 0.5, 0.0), );
+	// Green wall on right
+	Quad *q_2 = new Quad(
+		Point3D(-2.75, 2.75, -10.5),
+		Point3D(-2.75, 2.75, -5),
+		Point3D(-2.75, -2.75, -5),
+		Point3D(-2.75, -2.75, -10.5),
+		mat_grn);
+	scene.objects.push_back(q_2);
 
+ //   // Red wall on left
+	Quad *q_3 = new Quad(
+		Point3D(2.75, 2.75, -10.5),
+		Point3D(2.75, -2.75, -10.5),
+		Point3D(2.75, -2.75, -5),
+		Point3D(2.75, 2.75, -5),
+		mat_red);
+	scene.objects.push_back(q_3);
 
-     Triangle *tri_4 = new Triangle(
-      Point3D(2.75, -2.75, -5),
-      Point3D(2.75, 2.75, -5),
-      Point3D(2.75, -2.75, -10.5),
-      Point3D(0.0, 0.5, 0.0));
-
-
-    // Red wall on left
-     Triangle *tri_5 = new Triangle(
-      Point3D(-2.75, -2.75, -5),
-      Point3D(-2.75, -2.75, -10.5),
-      Point3D(-2.75, 2.75, -10.5),
-      Point3D(0.5, 0.0, 0.0));
-
-     Triangle *tri_6 = new Triangle(
-      Point3D(-2.75, 2.75, -5),
-      Point3D(-2.75, -2.75, -5),
-      Point3D(-2.75, 2.75, -10.5),
-      Point3D(0.5, 0.0, 0.0));
-
-
-    // Floor
-     Triangle *tri_6 = new Triangle(
-      Point3D(2.75, -2.75, -5),
-      Point3D(2.75, -2.75, -10.5),
-      Point3D(-2.75, -2.75, -10.5),
-      Point3D(0.6, 0.6, 0.6));
-
-     Triangle *tri_6 = new Triangle(
-      Point3D(-2.75, -2.75, -5),
-      Point3D(2.75, -2.75, -5),
-      Point3D(-2.75, -2.75, -10.5),
-      Point3D(0.6, 0.6, 0.6));
+ //   // Floor
+	Quad *q_4 = new Quad(
+		Point3D(2.75, -2.75, -10.5),
+		Point3D(-2.75, -2.75, -10.5),
+		Point3D(-2.75, -2.75, -5),
+		Point3D(2.75, -2.75, 5),
+		mat_floor);
+	scene.objects.push_back(q_4);
 
     // Back wall
-    Quad *q = new Quad(
-        Point3D(0, 0, 1),
-        Point3D(0, 0, -10.5),
-        Point3D(0.6, 0.6, 0.6),
-        Point3D(0.6, 0.6, 0.6));
-
-    scene.objects.push_back(tri_1);
-    scene.objects.push_back(tri_2);
-    scene.objects.push_back(tri_3);
-    scene.objects.push_back(tri_4);
-    scene.objects.push_back(tri_5);
-    scene.objects.push_back(tri_6);
-    scene.objects.push_back(q);
-
+	Quad *q_5 = new Quad(
+		Point3D(2.75, 2.75, -10.5),
+		Point3D(-2.75, 2.75, -10.5),
+		Point3D(-2.75, -2.75, -10.5),
+		Point3D(2.75, -2.75, -10.5),
+		mat_floor);
+	scene.objects.push_back(q_5);
 }
 
 int main(int argc, char *argv[])
@@ -140,7 +102,7 @@ int main(int argc, char *argv[])
         outputStr = argv[3];
     }
 
-    SetupScene1(&scene, width, height);
+    SetupCornellBox(&scene, width, height);
 
     // create new image
 	const char *filename = "out.png";
