@@ -123,6 +123,7 @@
     <ClInclude Include="algebra.h" />
     <ClInclude Include="lodepng\lodepng.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="photon.h" />
     <ClInclude Include="polyroots.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="shapes.h" />

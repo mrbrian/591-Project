@@ -134,3 +134,79 @@ bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth)
     col = col + reflect_rgb * hitObject->material->Kr;
     return true;
 }
+
+
+SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, double *t_min_ptr, Vector3D *n_min_ptr)
+{
+	SceneObject *hitObject = NULL;
+	double &t_min = *t_min_ptr;
+	Vector3D &n_min = *n_min_ptr;
+
+	for (std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
+	{
+		SceneObject *obj = (*it);
+
+		Vector3D n;
+		double t = obj->intersect(o, v, &n);      // whats the n?
+
+		if (0 <= t && t < t_min)
+		{
+			t_min = t;
+			if (n.dot(v) >= 0)
+				n = -n;
+			n_min = n;
+			hitObject = obj;
+		}
+	}
+	return hitObject;
+}
+
+photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Light *light)
+{
+	double t_min = INFINITY;
+	Vector3D n_min;
+	SceneObject *hitObject = NULL;
+	v.normalize();
+
+	Colour col = Colour(0, 0, 0);
+
+	// find closest intersection point, the object
+	hitObject = find_closest_intersection(scene, o, v, &t_min, &n_min);
+
+	if (hitObject == NULL)              // check for no intersection
+		return NULL;
+
+	Point3D p_int = o + t_min * v;      // calculate intersection point
+
+	// if its a specular surface..  shoot another ray
+	if (hitObject->material->Ks.R > 0)
+	{
+		Vector3D new_v;
+		return trace_primary_ray(p_int, new_v, scene, light);
+	}
+	else
+	{
+		photon *result = new photon();
+
+		p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
+
+		Point3D p = o + t_min * v;			// found closest intersection
+
+		Vector3D n = n_min;
+
+		// add diffuse color
+		col = (hitObject->material->GetKd(p) * fmax(n.dot(v), 0) * light->Id);
+
+		result->x = p_int[0];
+		result->y = p_int[1];
+		result->z = p_int[2];
+
+		result->p[0] = (char)col.R;
+		result->p[1] = (char)col.G;
+		result->p[2] = (char)col.B;
+//		result->p[2] = (char)col.B;
+
+		//result->phi = 
+		return result;
+	}
+}

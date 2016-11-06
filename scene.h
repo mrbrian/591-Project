@@ -3,6 +3,7 @@
 
 #include "shapes.h"
 #include "algebra.h"
+#include "photon.h"
 #include <vector>
 
 class Camera
@@ -103,5 +104,6 @@ public:
 };
 
 bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth);
+photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Colour *color);
 
 #endif //SCENE

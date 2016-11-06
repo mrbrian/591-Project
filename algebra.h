@@ -210,7 +210,22 @@ public:
   }
   double length() const
   {
-    return sqrt(length2());
+	  return sqrt(length2());
+  }
+
+  double get_x() const
+  {
+	  return v_[0];
+  }
+
+  double get_y() const
+  {
+	  return v_[1];
+  }
+
+  double get_z() const
+  {
+	  return v_[2];
   }
 
   double normalize();
@@ -221,6 +236,11 @@ public:
                     v_[1]*other[2] - v_[2]*other[1],
                     v_[2]*other[0] - v_[0]*other[2],
                     v_[0]*other[1] - v_[1]*other[0]);
+  }
+
+  double coord_sum() const
+  {
+	  return (v_[0] + v_[1] + v_[2]);
   }
 
 private:
