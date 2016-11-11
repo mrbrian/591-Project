@@ -161,7 +161,7 @@ SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, doub
 	return hitObject;
 }
 
-photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Light *light)
+/*bool trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Point3D *out_pt, Material *mat)
 {
 	double t_min = INFINITY;
 	Vector3D n_min;
@@ -186,7 +186,7 @@ photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Light *light)
 	}
 	else
 	{
-		photon *result = new photon();
+        _Photon *result = new _Photon();
 
 		p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
 
@@ -210,3 +210,4 @@ photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Light *light)
 		return result;
 	}
 }
+*/

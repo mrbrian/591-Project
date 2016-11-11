@@ -17,6 +17,7 @@ public:
 
     virtual void Transform(Matrix4x4 m)
     {
+        m = 0;
     }
 
     virtual double intersect(Point3D o, Vector3D v, Vector3D *n)

@@ -3,7 +3,6 @@
 
 #include "shapes.h"
 #include "algebra.h"
-#include "photon.h"
 #include <vector>
 
 class Camera
@@ -23,10 +22,22 @@ public:
     Colour Id;      // diffuse
     Colour Is;      // specular
     Point3D position;
+    double emission;    // amount of samples
+
     void Transform(Matrix4x4 m)
     {
         position = m * position;
     }
+};
+
+
+class LightObject
+{
+public:
+    Light *light;
+    SceneObject *obj;
+
+    LightObject(Light *light, SceneObject *obj);
 };
 
 class Plane
@@ -104,6 +115,6 @@ public:
 };
 
 bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth);
-photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Colour *color);
+//_Photon *trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Colour *color);
 
 #endif //SCENE

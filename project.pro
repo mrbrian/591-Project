@@ -8,7 +8,8 @@ INCLUDEPATH += .\
             lodepng
 
 # Input
-HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h
+HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
+    photon.h
 SOURCES += algebra.cpp \
            main.cpp \
            material.cpp \

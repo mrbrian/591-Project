@@ -143,8 +143,6 @@ int main(int argc, char *argv[])
     SetupCornellBox(&scene, width, height);
 
     // create new image
-	const char *filename = "out.png";
-
 	std::vector<unsigned char> image;
 	image.resize(width * height * 4);
 
@@ -164,7 +162,7 @@ int main(int argc, char *argv[])
 		}
 	}
     // save to file
-	unsigned int error = lodepng::encode(filename, image, width, height);
+    unsigned int error = lodepng::encode(outputStr, image, width, height);
 
 	/*if there's an error, display it*/
 	if (error) 
