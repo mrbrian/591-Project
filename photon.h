@@ -3,9 +3,7 @@
 
 #define _USE_MATH_DEFINES
 
-#include "math.h"
 #include "algebra.h"
-#include <algorithm>
 
 using namespace std;
 

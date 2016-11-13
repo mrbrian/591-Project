@@ -1,5 +1,5 @@
 #include "scene.h"
-#include "polyroots.h"
+#include "misc.h"
 
 #define MAX_DEPTH   5
 #define BG_COLOR    Color(0,0,0)
@@ -10,6 +10,32 @@ Light::Light(Point3D pos, Color a, Color d, Color s)
     Ia = a;
     Id = d;
     Is = s;
+}
+
+void Light::emit_photons(vector<photon*> *out_photons)
+{
+    int num_emit = 0;
+    while (num_emit < emission)
+    {
+        double x;
+        double y;
+        double z;
+        Vector3D dir;
+        do
+        {
+            x = m_RND_1;
+            y = m_RND_1;
+            z = m_RND_1;
+            dir = Vector3D(x, y, z);
+        }
+        while (dir.length2() > 1);
+        photon *p = new photon;
+        p->set_position(position);
+        p->set_direction(dir);
+
+        out_photons->push_back(p);
+        num_emit++;
+    }
 }
 
 Color *Scene::Render()
@@ -197,13 +223,9 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
 void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 {
     // If depth >= MAX_DEPTH then Each recursive step will stop w/ a probability of 0.1
-    if ((depth >= MAX_DEPTH) & (m_RND_2 <= 0.1)) return;
+    if ((depth >= MAX_DEPTH) & (m_RND_2 <= 0.1))
+        return;
 
-    // subtract energy according to how far the photon travels before intersection
-    //get intersection_pt.
-    //color from material
-    // absorption...
-    // material type (reflect? or diffuse or refract)
     Point3D start_pos = Point3D(in_pho->x, in_pho->y, in_pho->z);
     Vector3D direction = in_pho->get_direction();
     Color *clr;// = in_pho->p;

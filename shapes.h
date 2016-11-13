@@ -2,7 +2,6 @@
 #define SHAPES
 
 #include "algebra.h"
-#include "scene.h"
 #include "material.h"
 #include "polyroots.h"
 

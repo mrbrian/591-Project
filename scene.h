@@ -3,9 +3,9 @@
 
 #include "shapes.h"
 #include "algebra.h"
-#include "misc.h"
 #include "photon.h"
 #include <vector>
+#include "polyroots.h"
 
 using namespace std;
 
@@ -28,36 +28,12 @@ public:
     Point3D position;
     double emission;    // amount of samples
 
+    void emit_photons(vector<photon*> *out_photons);
+
     void Transform(Matrix4x4 m)
     {
         position = m * position;
     }        
-
-    void emit_photons(vector<photon*> *out_photons)
-    {
-        int num_emit = 0;
-        while (num_emit < emission)
-        {
-            double x;
-            double y;
-            double z;
-            Vector3D dir;
-            do
-            {
-                x = m_RND_1;
-                y = m_RND_1;
-                z = m_RND_1;
-                dir = Vector3D(x, y, z);
-            }
-            while (dir.length2() > 1);
-            photon *p = new photon;
-            p->set_position(position);
-            p->set_direction(dir);
-
-            out_photons->push_back(p);
-            num_emit++;
-        }
-    }
 };
 
 
