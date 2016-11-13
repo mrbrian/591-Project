@@ -37,12 +37,12 @@ void SetupCornellBox(Scene *s, int width, int height)
 	float img_plane_w = 0.5f;
 	scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
 
-	Material *mat_ceil = new Material(Colour(0, 0, 0), Colour(1, 1, 1), Colour(1, 1, 1), 1000, Colour(0, 0, 0));
-	Material *mat_grn = new Material(Colour(0, 0, 0), Colour(0, 0.5f, 0), Colour(1, 1, 1), 100, Colour(0, 0, 0));
-	Material *mat_red = new Material(Colour(0, 0, 0), Colour(0.5f, 0, 0), Colour(1, 1, 1), 10, Colour(0, 0, 0));
-	Material *mat_floor = new Material(Colour(0, 0, 0), Colour(0.6f, 0.6f, 0.6f), Colour(1, 1, 1), 10, Colour(0, 0, 0));
+    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(1, 1, 1), 1000, Color(0, 0, 0));
+    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(1, 1, 1), 100, Color(0, 0, 0));
+    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
+    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(1, 1, 1), 10, Color(0, 0, 0));
 
-	Light *light = new Light(Point3D(0, 2.65, -8), Colour(0.1, 0.1, 0.1), Colour(0.5, 0.5, 0.5), Colour(0, 0, 0));
+    Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(0.5, 0.5, 0.5), Color(0, 0, 0));
 	scene.lights.push_back(light);
 
 	// Ceiling
@@ -147,14 +147,14 @@ int main(int argc, char *argv[])
 	std::vector<unsigned char> image;
 	image.resize(width * height * 4);
 
-    Colour *resultImg = scene.Render();
+    Color *resultImg = scene.Render();
 
 	for (int x = 0; x < width; x++)
 	{
 		for (int y = 0; y < height; y++)
 		{
 			int idx = x + y * scene.cam.imgWidth;
-			Colour &c = resultImg[idx];
+            Color &c = resultImg[idx];
 			// clamp rgb values [0,1]
 			image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
 			image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;

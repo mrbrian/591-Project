@@ -17,4 +17,5 @@ SOURCES += algebra.cpp \
            material.cpp \
            polyroots.cpp \
            scene.cpp \
-           lodepng/lodepng.cpp
+           lodepng/lodepng.cpp \
+    photon.cpp

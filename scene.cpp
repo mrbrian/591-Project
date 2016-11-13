@@ -2,9 +2,9 @@
 #include "polyroots.h"
 
 #define MAX_DEPTH   5
-#define BG_COLOR    Colour(0,0,0)
+#define BG_COLOR    Color(0,0,0)
 
-Light::Light(Point3D pos, Colour a, Colour d, Colour s)
+Light::Light(Point3D pos, Color a, Color d, Color s)
 {
     position = pos;
     Ia = a;
@@ -12,9 +12,9 @@ Light::Light(Point3D pos, Colour a, Colour d, Colour s)
     Is = s;
 }
 
-Colour *Scene::Render()
+Color *Scene::Render()
 {
-    Colour * result = new Colour[cam.imgWidth * cam.imgHeight];
+    Color * result = new Color[cam.imgWidth * cam.imgHeight];
     // iterate over the pixels & set colour values
     for (int x = 0; x < cam.imgWidth; x++)
     {
@@ -25,9 +25,9 @@ Colour *Scene::Render()
             Vector3D v = p - cam.position;
             v.normalize();
 
-            Colour &c = result[x + y * cam.imgWidth];
+            Color &c = result[x + y * cam.imgWidth];
 
-            if (!trace_ray(cam.position, v, this, &c, 1))   // if ray hit nothing
+            if (!trace_ray(cam.position, v, &c, 1))   // if ray hit nothing
                 c = BG_COLOR;                               // use background color
         }
     }
@@ -61,7 +61,7 @@ bool intersection_test(Scene *scene, Point3D o, Point3D light_pos)
     return true;
 }
 
-bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth)
+bool Scene::trace_ray(Point3D o, Vector3D v, Color *color, int depth)
 {
     if (depth > MAX_DEPTH)  // stop recursing
         return false;
@@ -71,11 +71,11 @@ bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth)
     SceneObject *hitObject = NULL;
     v.normalize();
 
-    Colour &col = *color;
+    Color &col = *color;
     if (depth == 1)         // start ... with no colour
-        col = Colour(0,0,0);
+        col = Color(0,0,0);
 
-    for(std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
+    for(std::vector<SceneObject*>::iterator it = objects.begin(); it != objects.end(); ++it)
     {
         SceneObject *obj = (*it);
 
@@ -104,13 +104,13 @@ bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth)
     // found closest intersection
     Point3D p = o + t_min * v;
 
-    for(std::vector<Light*>::iterator it = scene->lights.begin(); it != scene->lights.end(); ++it)
+    for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
     {
         Light *light= (*it);
         col = col + hitObject->material->Ka * light->Ia;
 
         Point3D new_p = p + 0.1 * (light->position - p);
-        if (intersection_test(scene, new_p, light->position))
+        if (intersection_test(this, new_p, light->position))
            continue;
 
         Vector3D n = n_min;
@@ -124,12 +124,12 @@ bool trace_ray(Point3D o, Vector3D v, Scene *scene, Colour *color, int depth)
         col = col + (hitObject->material->Ks * pow(fmax(r.dot(-v), 0), hitObject->material->p) * light->Is);
     }
 
-    Colour reflect_rgb;     // reflection color;
+    Color reflect_rgb;     // reflection color;
 
     // calculate reflect vector
     Vector3D r = v + (2 * n_min.dot(-v)) * n_min;
 
-    trace_ray(p_int, r, scene, &reflect_rgb, depth + 1);
+    trace_ray(p_int, r, &reflect_rgb, depth + 1);
     // add reflection color
     col = col + reflect_rgb * hitObject->material->Kr;
     return true;
@@ -161,17 +161,17 @@ SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, doub
 	return hitObject;
 }
 
-bool trace_primary_ray(Scene *scene, Point3D in_pos, Vector3D in_dir, Colour *in_clr, Point3D *out_pos, Vector3D *out_norm, Colour *out_clr, Material *out_mat)
+bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *out_pos, Vector3D *out_norm, Color *out_clr, Material *out_mat)
 {
 	double t_min = INFINITY;
 	Vector3D n_min;
 	SceneObject *hitObject = NULL;
     in_dir.normalize();
 
-	Colour col = Colour(0, 0, 0);
+    Color col = Color(0, 0, 0);
 
 	// find closest intersection point, the object
-    hitObject = find_closest_intersection(scene, in_pos, in_dir, &t_min, &n_min);
+    hitObject = find_closest_intersection(this, in_pos, in_dir, &t_min, &n_min);
 
 	if (hitObject == NULL)              // check for no intersection
         return false;
@@ -187,8 +187,188 @@ bool trace_primary_ray(Scene *scene, Point3D in_pos, Vector3D in_dir, Colour *in
     n = n_min;
 
     // add diffuse color
-    Colour &clr = *out_clr;
+    Color &clr = *out_clr;
     clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
     return true;
 }
 
+
+// collide photon with the scene objects
+void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
+{
+    // If depth >= MAX_DEPTH then Each recursive step will stop w/ a probability of 0.1
+    if ((depth >= MAX_DEPTH) & (m_RND_2 <= 0.1)) return;
+
+    // subtract energy according to how far the photon travels before intersection
+    //get intersection_pt.
+    //color from material
+    // absorption...
+    // material type (reflect? or diffuse or refract)
+    Point3D start_pos = Point3D(in_pho->x, in_pho->y, in_pho->z);
+    Vector3D direction = in_pho->get_direction();
+    Color *clr;// = in_pho->p;
+
+    Point3D *i_point;
+    Vector3D *i_normal;
+    Color *i_clr;
+    Material *i_mat;
+
+    if (!trace_primary_ray(start_pos, direction, clr, i_point, i_normal, i_clr, i_mat))
+        return;
+
+    RayType ray_type = russian_roulette(i_mat);
+
+    bounce_photon(ray_type, i_point, i_normal, i_clr, depth, out_list);
+
+    /*
+    // subtract energy depending on absorption
+    in_pho->p[3] -= 1;
+
+    _Photon *pho_out = new _Photon();
+    if (pho_out != NULL)
+    {
+        //store new photon splat
+        photon_map->push_back(pho_out);
+    }
+    RayType next_ray = roulette(mat->Kd, mat->Ks);
+
+    switch (next_ray)
+    {
+    case Diffuse:
+        //  choose random hemisphere direction
+    break;
+    case Specular:
+        // choose a reflect direction
+    break;
+    case Transmission:
+        // check if transparent
+        // if not then nothin
+        return NULL;
+    }
+    return pho_out;
+
+    --------
+
+    // Russian Roulette (rr) strategy
+    // If depth >= 5
+    // then Each recursive step will stop w/ a probability of 0.1
+    double rr_factor = 1.0;
+    if ((depth >= 5) & (m_RND_2 <= 0.1)) return;
+    rr_factor = 1.0 / (1.0 - 0.1);
+
+    // Find ray intsersection with the scene
+    m_Intersection intersection = scene.intersect(ray);
+    if (!intersection) return;
+
+    // Compute intersection hit point position and its normal
+    m_Vector hit_point = ray.origin + ray.direction * intersection.t;
+    m_Vector normal_at_hit_point = intersection.object->normal(hit_point);
+    ray.origin = hit_point;
+
+    // Add the emission to the color, scaled e/ the Russian Roulette probability weight.
+    const double emission = intersection.object->emission;
+    color = color + m_Vector(emission, emission, emission) * rr_factor;
+
+    double ktot = intersection.object->kd + intersection.object->ks + intersection.object->kr;
+    double m_random_float = m_RND_2;
+
+    if (m_random_float < intersection.object->kd) // send a diffuse ray
+    {
+        ray.direction = HemisphereSampling(normal_at_hit_point);
+
+        double cosine_t = ray.direction.DotProduct(normal_at_hit_point);
+        m_Vector tmp;
+        m_PathTracer(ray, depth+1, tmp);
+        color = color + (tmp.Multiply(intersection.object->color)) * cosine_t * 0.1 * rr_factor;
+    }
+    else
+        if (m_random_float < (intersection.object->kd + intersection.object->ks)) // send a specular ray
+        {
+
+            double cosine_t = ray.direction.DotProduct(normal_at_hit_point);
+            ray.direction = (ray.direction - normal_at_hit_point*(2*cosine_t)).Normalize();
+            m_Vector tmp_color = m_Vector(0,0,0);
+            m_PathTracer(ray, depth+1, tmp_color);
+            color = color + tmp_color * rr_factor;
+        }
+        else // send a transmission (refraction) ray
+        {
+            ray.direction = ProcessTransmissionRay (normal_at_hit_point, ray.direction);
+            m_Vector tmp_color;
+            m_PathTracer(ray, depth+1, tmp_color);
+            color = color + tmp_color * 1.15 * rr_factor;
+        }
+    ----------
+    */
+}
+
+void Scene::emit_photons()
+{
+    vector<photon*> photons;
+    vector<photon*> out_photons;
+
+    spawn_photons(&photons);    // spawn initial photons for all lights
+
+    for(std::vector<photon*>::iterator it = photons.begin(); it != photons.end(); ++it)
+    {
+        photon *obj = (*it);
+        trace_photon(obj, 0, &out_photons);
+    }
+}
+
+void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Color *i_clr, int depth, vector<photon*> *out_list)
+{
+    photon *new_photon;
+
+    switch (ray_type)
+    {
+    case Diffuse:
+        //  choose random hemisphere direction
+    break;
+    case Specular:
+        // choose a reflect direction
+    break;
+    case Transmission:
+        // check if transparent
+        // if not then nothin
+        return;
+    }
+    new_photon = new photon();
+    new_photon->set_position(*i_pos);
+    //new_photon->set_direction(*dir);
+    //new_photon->p =
+
+    trace_photon(new_photon, depth + 1, out_list);
+}
+
+Scene::RayType Scene::russian_roulette(Material *mat)   // [0, d] diffuse reflection ray, [d,s+d] specular ray, [s+d, 1] absorption
+{
+    Color diff = mat->Kd;
+    Color spec = mat->Ks;
+
+    double p_refl = std::max(diff.R() + spec.R(), diff.G() + spec.G());
+    p_refl = std::max(p_refl, diff.B() + spec.B());
+
+    float diff_sum = diff.R() + diff.G() + diff.B();
+    float spec_sum = spec.R() + spec.G() + spec.B();
+
+    float p_diff = diff_sum / (diff_sum + spec_sum) * p_refl;
+    float p_spec = spec_sum / (diff_sum + spec_sum) * p_refl;
+
+    float r = m_RND_2;
+
+    if (r >= 0 && r < p_diff)
+        return RayType::Diffuse;
+    if (r >= p_diff && r < p_spec)
+        return RayType::Specular;
+    return RayType::Transmission;
+}
+
+void Scene::spawn_photons(vector<photon*> *out_photons)
+{
+    for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
+    {
+        Light *obj = (*it);
+        obj->emit_photons(out_photons);
+    }
+}

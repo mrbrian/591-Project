@@ -559,32 +559,32 @@ inline std::ostream& operator <<(std::ostream& os, const Matrix4x4& M)
             << M[3][2] << " " << M[3][3] << "]";
 }
 
-class Colour
+class Color
 {
 public:
-    Colour()
+    Color()
     {
         r_ = 0;
         g_ = 0;
         b_ = 0;
     }
-    Colour(double r, double g, double b)
+    Color(double r, double g, double b)
       : r_(r)
       , g_(g)
       , b_(b)
     {}
-  Colour(double c)
+  Color(double c)
     : r_(c)
     , g_(c)
     , b_(c)
   {}
-  Colour(const Colour& other)
+  Color(const Color& other)
     : r_(other.r_)
     , g_(other.g_)
     , b_(other.b_)
   {}
 
-  Colour& operator =(const Colour& other)
+  Color& operator =(const Color& other)
   {
     r_ = other.r_;
     g_ = other.g_;
@@ -610,22 +610,22 @@ private:
   double b_;
 };
 
-inline Colour operator *(double s, const Colour& a)
+inline Color operator *(double s, const Color& a)
 {
-  return Colour(s*a.R(), s*a.G(), s*a.B());
+  return Color(s*a.R(), s*a.G(), s*a.B());
 }
 
-inline Colour operator *(const Colour& a, const Colour& b)
+inline Color operator *(const Color& a, const Color& b)
 {
-  return Colour(a.R()*b.R(), a.G()*b.G(), a.B()*b.B());
+  return Color(a.R()*b.R(), a.G()*b.G(), a.B()*b.B());
 }
 
-inline Colour operator +(const Colour& a, const Colour& b)
+inline Color operator +(const Color& a, const Color& b)
 {
-  return Colour(a.R()+b.R(), a.G()+b.G(), a.B()+b.B());
+  return Color(a.R()+b.R(), a.G()+b.G(), a.B()+b.B());
 }
 
-inline std::ostream& operator <<(std::ostream& os, const Colour& c)
+inline std::ostream& operator <<(std::ostream& os, const Color& c)
 {
   return os << "c<" << c.R() << "," << c.G() << "," << c.B() << ">";
 }

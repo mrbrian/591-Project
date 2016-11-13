@@ -15,18 +15,11 @@ struct photon {
     char phi, theta;  // compressed incident direction
 	short flag;       // flag used in kdtree
 
-    void set_position(Point3D p)
-    {
-        x = p[0];
-        y = p[1];
-        z = p[2];
-    }
-
-    void set_direction(Vector3D dir)
-    {
-        phi = 255 * (atan2(dir.get_y(), dir.get_x()) + M_PI/ (2 * M_PI));
-        theta = 255 * acos(dir.get_x()) / M_PI;
-    }
+    void set_position(Point3D p);
+    void set_direction(Vector3D dir);
+    void set_color(Color dir);
+    Point3D get_position();
+    Vector3D get_direction();
 };
 /*
 class Photons

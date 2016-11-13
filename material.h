@@ -6,28 +6,28 @@
 class Material
 {
 public:
-    Material(Colour a, Colour d, Colour s, double p, Colour r);
-    Material(Colour a, Colour d, Colour s, double p);
+    Material(Color a, Color d, Color s, double p, Color r);
+    Material(Color a, Color d, Color s, double p);
 
     // accessor for diffuse color
-    virtual Colour GetKd(Point3D p)
+    virtual Color GetKd(Point3D p)
     {
         p = Point3D();  // get rid of warning
         return Kd;
     }
 
-    Colour Ka;      // ambient coefficient
-    Colour Ks;      // specular coefficient
+    Color Ka;      // ambient coefficient
+    Color Ks;      // specular coefficient
     double p;       // specular power
-    Colour Kr;      // reflection coefficient
-    Colour Kd;      // only access kd through accessor func
+    Color Kr;      // reflection coefficient
+    Color Kd;      // only access kd through accessor func
 };
 
 class ChromeMaterial : public Material
 {
 public:
     ChromeMaterial()
-        : Material( Colour(0,0,0), Colour(0,0,0), Colour(1,1,1), 100, Colour(1,1,1))
+        : Material( Color(0,0,0), Color(0,0,0), Color(1,1,1), 100, Color(1,1,1))
     {
     }
 };
@@ -36,8 +36,8 @@ class CheckerMaterial : public Material
 {
 public:
     float squareSize;      // size of the checkers
-    CheckerMaterial(Colour a, Colour d, Colour s, double in_p, Colour r, float sc);
-    Colour GetKd(Point3D p);
+    CheckerMaterial(Color a, Color d, Color s, double in_p, Color r, float sc);
+    Color GetKd(Point3D p);
 };
 
 #endif // MATERIAL

@@ -1,23 +1,23 @@
 #include "material.h"
 
-#define DEF_REFLECT     Colour(0.1, 0.1, 0.1)
+#define DEF_REFLECT     Color(0.1, 0.1, 0.1)
 
 // procedural texture
-Colour CheckerMaterial::GetKd(Point3D p)
+Color CheckerMaterial::GetKd(Point3D p)
 {
     if (((int)(round(p[0] / squareSize) + round(p[1] / squareSize) + round(p[2] / squareSize)) % 2) == 0)
-        return Colour(1,1,1) * Kd;
+        return Color(1,1,1) * Kd;
     else
-        return Colour(0,0,0);
+        return Color(0,0,0);
 }
 
-CheckerMaterial::CheckerMaterial(Colour a, Colour d, Colour s, double in_p, Colour r, float sc)
+CheckerMaterial::CheckerMaterial(Color a, Color d, Color s, double in_p, Color r, float sc)
     : Material(a, d, s, in_p, r)
 {
     squareSize = sc;
 }
 
-Material::Material(Colour a, Colour d, Colour s, double in_p, Colour r)
+Material::Material(Color a, Color d, Color s, double in_p, Color r)
 {
     Kr = r;
     Ka = a;
@@ -26,7 +26,7 @@ Material::Material(Colour a, Colour d, Colour s, double in_p, Colour r)
     p = in_p;
 }
 
-Material::Material(Colour a, Colour d, Colour s, double in_p)
+Material::Material(Color a, Color d, Color s, double in_p)
 {
     Kr = DEF_REFLECT;
     Ka = a;
