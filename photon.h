@@ -1,19 +1,34 @@
+#ifndef PHOTON_H
+#define PHOTON_H
+
+#define _USE_MATH_DEFINES
+
+#include "math.h"
+#include "algebra.h"
 #include <algorithm>
-#include "scene.h"
 
 using namespace std;
 
-struct _Photon {
+struct photon {
 	float x, y, z;    // position
     char p[4];        // power packed as 4 chars
     char phi, theta;  // compressed incident direction
 	short flag;       // flag used in kdtree
 
-    void setPosition(Vector3D p)
+    void set_position(Point3D p)
     {
+        x = p[0];
+        y = p[1];
+        z = p[2];
+    }
+
+    void set_direction(Vector3D dir)
+    {
+        phi = 255 * (atan2(dir.get_y(), dir.get_x()) + M_PI/ (2 * M_PI));
+        theta = 255 * acos(dir.get_x()) / M_PI;
     }
 };
-
+/*
 class Photons
 {
     enum RayType
@@ -41,7 +56,7 @@ class Photons
 	}
 
     // collide photon with the scene objects
-    _Photon *update_photon(Scene *scene, _Photon *pho_in)
+    _Photon *trace_photon(Scene *scene, _Photon *pho_in)
     {
         // subtract energy according to how far the photon travels before intersection
         //get intersection_pt.
@@ -101,3 +116,7 @@ class Photons
         return RayType::Transmission;
     }
 };
+
+*/
+#endif //PHOTON
+

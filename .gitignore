@@ -10,3 +10,5 @@ debug
 release
 output.png
 *.psd
+project.pro.user
+.gitignore~

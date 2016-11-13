@@ -6,10 +6,12 @@ TEMPLATE = app
 TARGET = project
 INCLUDEPATH += .\
             lodepng
+CONFIG += c++11
 
 # Input
 HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
-    photon.h
+    photon.h \
+    misc.h
 SOURCES += algebra.cpp \
            main.cpp \
            material.cpp \

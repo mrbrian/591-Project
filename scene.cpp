@@ -161,53 +161,34 @@ SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, doub
 	return hitObject;
 }
 
-/*bool trace_primary_ray(Point3D o, Vector3D v, Scene *scene, Point3D *out_pt, Material *mat)
+bool trace_primary_ray(Scene *scene, Point3D in_pos, Vector3D in_dir, Colour *in_clr, Point3D *out_pos, Vector3D *out_norm, Colour *out_clr, Material *out_mat)
 {
 	double t_min = INFINITY;
 	Vector3D n_min;
 	SceneObject *hitObject = NULL;
-	v.normalize();
+    in_dir.normalize();
 
 	Colour col = Colour(0, 0, 0);
 
 	// find closest intersection point, the object
-	hitObject = find_closest_intersection(scene, o, v, &t_min, &n_min);
+    hitObject = find_closest_intersection(scene, in_pos, in_dir, &t_min, &n_min);
 
 	if (hitObject == NULL)              // check for no intersection
-		return NULL;
+        return false;
 
-	Point3D p_int = o + t_min * v;      // calculate intersection point
+    Material &mat = *out_mat;
+    mat = *hitObject->material;
 
-	// if its a specular surface..  shoot another ray
-	if (hitObject->material->Ks.R > 0)
-	{
-		Vector3D new_v;
-		return trace_primary_ray(p_int, new_v, scene, light);
-	}
-	else
-	{
-        _Photon *result = new _Photon();
+    Point3D &p_int = *out_pos;
+    p_int = in_pos + t_min * in_dir;      // calculate intersection point
+    //p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
 
-		p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
+    Vector3D &n = *out_norm;
+    n = n_min;
 
-		Point3D p = o + t_min * v;			// found closest intersection
-
-		Vector3D n = n_min;
-
-		// add diffuse color
-		col = (hitObject->material->GetKd(p) * fmax(n.dot(v), 0) * light->Id);
-
-		result->x = p_int[0];
-		result->y = p_int[1];
-		result->z = p_int[2];
-
-		result->p[0] = (char)col.R;
-		result->p[1] = (char)col.G;
-		result->p[2] = (char)col.B;
-//		result->p[2] = (char)col.B;
-
-		//result->phi = 
-		return result;
-	}
+    // add diffuse color
+    Colour &clr = *out_clr;
+    clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
+    return true;
 }
-*/
+
