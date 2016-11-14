@@ -39,7 +39,42 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         num_emit++;
     }
 }
-/*
+
+// ----------------------------------------------------------------------------
+// BuildOrthonormalSystem ()
+//
+// Generating outgoing ray directions by uniform sampling on a hemisphere
+//
+// Input: vectors v1 and v2
+// Output: vector v3 so (v1, v2, v3) form an orthonormal system
+//         (assuming v1 is already normalized)
+//
+// ----------------------------------------------------------------------------
+void BuildOrthonormalSystem(const Vector3D& v1, Vector3D& v2, Vector3D& v3)
+{
+    float inverse_length, den;
+
+    if (std::abs(v1[0]) > std::abs(v1[1]))
+    {
+        // project to the plane y = 0
+        // construct a normalized orthogonal vector on this plane
+        den = sqrtf(v1[0] * v1[0] + v1[2] * v1[2]);
+        inverse_length = 1.f / den;
+        v2 = Vector3D(-v1[2] * inverse_length, 0.0f, v1[0] * inverse_length);
+    }
+    else
+    {
+        // project to the plane x = 0
+        // construct a normalized orthogonal vector on this plane
+        den = sqrtf(v1[1] * v1[1] + v1[2] * v1[2]);
+        inverse_length = 1.0f / den;
+        v2 = Vector3D(0.0f, v1[2] * inverse_length, -v1[1] * inverse_length);
+    }
+
+    // construct v3 as the cross-product between v1 and v2
+    v3 = v1.cross(v2);
+}
+
 // ----------------------------------------------------------------------------
 // HemisphereSampling ()
 //
@@ -66,18 +101,19 @@ Vector3D HemisphereSampling(Vector3D m_normal)
 
     // Now we build an otrhotnormal frame system
     // to "rotate" the sampled ray to this system
-    m_Vector v2, v3;
+    Vector3D v2, v3;
     BuildOrthonormalSystem (m_normal, v2, v3);
 
     // Construct the normalized rotated vector
-    double vecx = m_Vector(v2.x, v3.x, m_normal.x).DotProduct(sampled_ray_direction);
-    double vecy = m_Vector(v2.y, v3.y, m_normal.y).DotProduct(sampled_ray_direction);
-    double vecz = m_Vector(v2.z, v3.z, m_normal.z).DotProduct(sampled_ray_direction);
-    m_Vector m_rotated_ray_direction = m_Vector(vecx,vecy,vecz);
+    double vecx = Vector3D(v2[0], v3[0], m_normal[0]).dot(sampled_ray_direction);
+    double vecy = Vector3D(v2[1], v3[1], m_normal[1]).dot(sampled_ray_direction);
+    double vecz = Vector3D(v2[2], v3[2], m_normal[2]).dot(sampled_ray_direction);
+    Vector3D m_rotated_ray_direction = Vector3D(vecx,vecy,vecz);
 
+    m_rotated_ray_direction.normalize();
     return m_rotated_ray_direction;
 }
-*/
+
 
 Color *Scene::Render()
 {
@@ -228,10 +264,12 @@ SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, doub
 	return hitObject;
 }
 
-bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Color *_out_clr, Material *_out_mat)
+bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Vector3D *_out_reflect, Vector3D *_out_refract, Color *_out_clr, Material *_out_mat)
 {
     Point3D &out_pos = *_out_pos;
     Vector3D &out_norm = *_out_norm;
+    Vector3D &out_reflect = *_out_reflect;
+    Vector3D &out_refract = *_out_refract;
     Color &out_clr = *_out_clr;
     Material &out_mat = *_out_mat;
 
@@ -254,6 +292,7 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     //p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
 
     out_norm = n_min;
+    out_reflect = in_dir + (2 * n_min.dot(-in_dir)) * n_min;
 
     // add diffuse color    
     //out_clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
@@ -274,15 +313,17 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 
     Point3D i_point;
     Vector3D i_normal;
+    Vector3D i_reflect;
+    Vector3D i_refract;
     Color i_clr;
     Material i_mat;
 
-    if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_clr, &i_mat))
+    if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, &i_mat))
         return;
 
     RayType ray_type = russian_roulette(&i_mat);
 
-    bounce_photon(ray_type, &i_point, &i_normal, &i_clr, depth, out_list);
+    bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
 
     /*
     // subtract energy depending on absorption
@@ -380,27 +421,37 @@ void Scene::emit_photons(int num_photons)
     }
 }
 
-void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Color *i_clr, int depth, vector<photon*> *out_list)
+void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Vector3D *i_reflect, Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list)
 {
     photon *new_photon;
+    Vector3D new_dir;
+    Point3D new_pos;
 
     switch (ray_type)
     {
     case Diffuse:
         //  choose random hemisphere direction
+        new_pos = (*i_pos) + 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_dir = HemisphereSampling(*i_normal);
     break;
     case Specular:
         // choose a reflect direction
+        // calculate reflect vector
+        new_pos = (*i_pos) + 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_dir = *i_reflect;
+
     break;
     case Transmission:
         // check if transparent
         // if not then nothin
+        new_pos = (*i_pos) - 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_dir = *i_refract;
         return;
     }
     new_photon = new photon();
-    new_photon->set_position(*i_pos);
-    //new_photon->set_direction(*dir);
-    //new_photon->p =
+    new_photon->set_position(new_pos);
+    new_photon->set_direction(new_dir);
+    printf("%d: %f %f %f\n", depth, (*i_pos)[0], (*i_pos)[1], (*i_pos)[2]);
 
     trace_photon(new_photon, depth + 1, out_list);
 }
