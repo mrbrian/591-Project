@@ -23,11 +23,11 @@ void photon::set_direction(Vector3D dir)
     theta = (char)(255 * acos(dir[1]) / M_PI);
 }
 
-void photon::set_color(Color dir)
+void photon::set_color(Color clr)
 {
-    p[0] = (unsigned char)(dir.R() * 255);
-    p[1] = (unsigned char)(dir.G() * 255);
-    p[2] = (unsigned char)(dir.B() * 255);
+    p[0] = (unsigned char)(clr.R() * 255);
+    p[1] = (unsigned char)(clr.G() * 255);
+    p[2] = (unsigned char)(clr.B() * 255);
     p[3] = 0;//(char)(dir.R() * 255);
 }
 

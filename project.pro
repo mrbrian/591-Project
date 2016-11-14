@@ -11,11 +11,13 @@ CONFIG += c++11
 # Input
 HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
     photon.h \
-    misc.h
+    misc.h \
+    camera.h
 SOURCES += algebra.cpp \
            main.cpp \
            material.cpp \
            polyroots.cpp \
            scene.cpp \
            lodepng/lodepng.cpp \
-    photon.cpp
+    photon.cpp \
+    camera.cpp

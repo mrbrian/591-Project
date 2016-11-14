@@ -148,7 +148,9 @@ int main(int argc, char *argv[])
 	std::vector<unsigned char> image;
 	image.resize(width * height * 4);
 
-    scene.emit_photons(10);
+    vector<photon*> *photon_map = new vector<photon*>;
+    scene.emit_photons(50, photon_map);
+    scene.Render(photon_map);
     return 0;
 
     Color *resultImg = scene.Render();
