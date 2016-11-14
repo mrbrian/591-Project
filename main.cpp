@@ -56,13 +56,14 @@ void SetupCornellBox(Scene *s, int width, int height)
 	scene.objects.push_back(q_1);
 
 	// Ceiling light
-	Quad *light_q = new Quad(
+    /*Quad *light_q = new Quad(
 		Point3D(0.653, 2.74, -8.274),
 		Point3D(-0.653, 2.74, -8.274),
 		Point3D(-0.653, 2.74, -7.224),
 		Point3D(0.653, 2.74, -7.224),
 		mat_red);
-    //scene.objects.push_back(light_q);
+    scene.objects.push_back(light_q);
+    */
 
 	// Green wall on right
 	Quad *q_2 = new Quad(

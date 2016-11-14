@@ -34,6 +34,7 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         p->set_position(position);
         dir.normalize();
         p->set_direction(dir);
+        p->set_color(Id);       // only using the diffuse color..(?)
 
         out_photons->push_back(p);
         num_emit++;
@@ -278,8 +279,6 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
 	SceneObject *hitObject = NULL;
     in_dir.normalize();
 
-    Color col = Color(0, 0, 0);
-
 	// find closest intersection point, the object
     hitObject = find_closest_intersection(this, in_pos, in_dir, &t_min, &n_min);
 
@@ -324,11 +323,14 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
         return;
     }
 
-    printf("%d: %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2], direction[0], direction[1], direction[2]);
+    printf("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
+            direction[0], direction[1], direction[2],
+            (*clr).R(), (*clr).G(), (*clr).B()
+            );
     RayType ray_type = russian_roulette(&i_mat);
 
     if (ray_type == RayType::Diffuse)
-        i_clr = i_mat.Kd;
+        i_clr = Color(i_clr.R() * i_mat.Kd.R(), i_clr.G() * i_mat.Kd.G(), i_clr.B() * i_mat.Kd.B());
 
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
 
