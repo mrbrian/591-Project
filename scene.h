@@ -21,21 +21,20 @@ public:
 class Light
 {
 public:
-    Light(Point3D pos, Color a, Color d, Color s);
+    Light(Point3D pos, Color a, Color d, Color s, double in_watts);
     Color Ia;      // ambient
     Color Id;      // diffuse
     Color Is;      // specular
     Point3D position;
-    double emission;    // amount of samples
+    double watts;
 
-    void emit_photons(vector<photon*> *out_photons);
+    void emit_photons(int to_emit, vector<photon*> *out_photons);
 
     void Transform(Matrix4x4 m)
     {
         position = m * position;
     }        
 };
-
 
 class LightObject
 {
@@ -118,10 +117,10 @@ public:
 
     // collide photon with the scene objects
     void trace_photon(photon *in_pho, int depth, vector<photon*> *out_list);
-    void emit_photons();
+    void emit_photons(int num_photons);
     void bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Color *i_clr, int depth, vector<photon*> *out_list);
     RayType russian_roulette(Material *mat);
-    void spawn_photons(vector<photon*> *out_photons);
+    void spawn_photons(int num_photons, vector<photon*> *out_photons);
 
     void Transform(Matrix4x4 m)
     {

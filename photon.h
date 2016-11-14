@@ -9,8 +9,8 @@ using namespace std;
 
 struct photon {
 	float x, y, z;    // position
-    char p[4];        // power packed as 4 chars
-    char phi, theta;  // compressed incident direction
+    unsigned char p[4];        // power packed as 4 chars
+    unsigned char phi, theta;  // compressed incident direction
 	short flag;       // flag used in kdtree
 
     void set_position(Point3D p);

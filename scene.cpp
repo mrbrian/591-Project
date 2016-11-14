@@ -4,18 +4,19 @@
 #define MAX_DEPTH   5
 #define BG_COLOR    Color(0,0,0)
 
-Light::Light(Point3D pos, Color a, Color d, Color s)
+Light::Light(Point3D pos, Color a, Color d, Color s, double in_watts)
 {
     position = pos;
     Ia = a;
     Id = d;
     Is = s;
+    watts = in_watts;
 }
 
-void Light::emit_photons(vector<photon*> *out_photons)
+void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
 {
     int num_emit = 0;
-    while (num_emit < emission)
+    while (num_emit < to_emit)
     {
         double x;
         double y;
@@ -37,6 +38,45 @@ void Light::emit_photons(vector<photon*> *out_photons)
         num_emit++;
     }
 }
+/*
+// ----------------------------------------------------------------------------
+// HemisphereSampling ()
+//
+// Generating outgoing ray directions by uniform sampling on a hemisphere
+//
+// Input: normal vector at the intersection point
+// Output: outgoing ray direction from uniform sampling on a hemisphere
+//
+// ----------------------------------------------------------------------------
+
+Vector3D HemisphereSampling(Vector3D m_normal)
+{
+    float r_1 = m_RND_2;
+    float r_2 = m_RND_2;
+
+    float r = sqrt(1 - r_1 * r_2);
+    float phi = 2 * M_PI * r_2;
+
+    double vx = cos(phi) * r;
+    double vy = sin(phi) * r;
+    double vz = r_1;
+
+    Vector3D sampled_ray_direction = Vector3D(vx, vy, vz);
+
+    // Now we build an otrhotnormal frame system
+    // to "rotate" the sampled ray to this system
+    m_Vector v2, v3;
+    BuildOrthonormalSystem (m_normal, v2, v3);
+
+    // Construct the normalized rotated vector
+    double vecx = m_Vector(v2.x, v3.x, m_normal.x).DotProduct(sampled_ray_direction);
+    double vecy = m_Vector(v2.y, v3.y, m_normal.y).DotProduct(sampled_ray_direction);
+    double vecz = m_Vector(v2.z, v3.z, m_normal.z).DotProduct(sampled_ray_direction);
+    m_Vector m_rotated_ray_direction = m_Vector(vecx,vecy,vecz);
+
+    return m_rotated_ray_direction;
+}
+*/
 
 Color *Scene::Render()
 {
@@ -324,17 +364,20 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
     */
 }
 
-void Scene::emit_photons()
+void Scene::emit_photons(int num_photons)
 {
     vector<photon*> photons;
     vector<photon*> out_photons;
 
-    spawn_photons(&photons);    // spawn initial photons for all lights
+    spawn_photons(num_photons, &photons);    // spawn initial photons for all lights
 
     for(std::vector<photon*>::iterator it = photons.begin(); it != photons.end(); ++it)
     {
         photon *obj = (*it);
-        trace_photon(obj, 0, &out_photons);
+        //trace_photon(obj, 0, &out_photons);
+        Vector3D p = obj->get_position();
+        Vector3D d = obj->get_direction();
+        printf("%f,%f,%f - %f,%f,%f\n", p[0], p[1], p[2], d[0], d[1], d[2]);
     }
 }
 
@@ -386,11 +429,23 @@ Scene::RayType Scene::russian_roulette(Material *mat)   // [0, d] diffuse reflec
     return RayType::Transmission;
 }
 
-void Scene::spawn_photons(vector<photon*> *out_photons)
+void Scene::spawn_photons(int num_photons, vector<photon*> *out_photons)
 {
+    double total_watts = 0;
+    double energy_per_photon = 0;
+
     for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
     {
         Light *obj = (*it);
-        obj->emit_photons(out_photons);
+        total_watts += obj->watts;
+    }
+
+    energy_per_photon = total_watts / num_photons;
+
+    for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
+    {
+        Light *obj = (*it);
+        int num_to_emit = (int)(obj->watts / energy_per_photon);
+        obj->emit_photons(num_to_emit, out_photons);
     }
 }
