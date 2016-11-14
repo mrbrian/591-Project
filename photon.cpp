@@ -25,9 +25,9 @@ void photon::set_direction(Vector3D dir)
 
 void photon::set_color(Color dir)
 {
-    p[0] = (char)(dir.R() * 255);
-    p[1] = (char)(dir.G() * 255);
-    p[2] = (char)(dir.B() * 255);
+    p[0] = (unsigned char)(dir.R() * 255);
+    p[1] = (unsigned char)(dir.G() * 255);
+    p[2] = (unsigned char)(dir.B() * 255);
     p[3] = 0;//(char)(dir.R() * 255);
 }
 

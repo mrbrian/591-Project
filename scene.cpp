@@ -293,6 +293,7 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     out_norm = n_min;
     out_reflect = in_dir + (2 * n_min.dot(-in_dir)) * n_min;
 
+    out_clr = *in_clr;
     // add diffuse color    
     //out_clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
     return true;
@@ -323,97 +324,16 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
         return;
     }
 
-    printf("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
-            direction[0], direction[1], direction[2],
-            (*clr).R(), (*clr).G(), (*clr).B()
-            );
     RayType ray_type = russian_roulette(&i_mat);
 
     if (ray_type == RayType::Diffuse)
         i_clr = Color(i_clr.R() * i_mat.Kd.R(), i_clr.G() * i_mat.Kd.G(), i_clr.B() * i_mat.Kd.B());
 
+    printf("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
+            direction[0], direction[1], direction[2],
+            i_clr.R(), i_clr.G(), i_clr.B()
+            );
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
-
-    /*
-    // subtract energy depending on absorption
-    in_pho->p[3] -= 1;
-
-    _Photon *pho_out = new _Photon();
-    if (pho_out != NULL)
-    {
-        //store new photon splat
-        photon_map->push_back(pho_out);
-    }
-    RayType next_ray = roulette(mat->Kd, mat->Ks);
-
-    switch (next_ray)
-    {
-    case Diffuse:
-        //  choose random hemisphere direction
-    break;
-    case Specular:
-        // choose a reflect direction
-    break;
-    case Transmission:
-        // check if transparent
-        // if not then nothin
-        return NULL;
-    }
-    return pho_out;
-
-    --------
-
-    // Russian Roulette (rr) strategy
-    // If depth >= 5
-    // then Each recursive step will stop w/ a probability of 0.1
-    double rr_factor = 1.0;
-    if ((depth >= 5) & (m_RND_2 <= 0.1)) return;
-    rr_factor = 1.0 / (1.0 - 0.1);
-
-    // Find ray intsersection with the scene
-    m_Intersection intersection = scene.intersect(ray);
-    if (!intersection) return;
-
-    // Compute intersection hit point position and its normal
-    m_Vector hit_point = ray.origin + ray.direction * intersection.t;
-    m_Vector normal_at_hit_point = intersection.object->normal(hit_point);
-    ray.origin = hit_point;
-
-    // Add the emission to the color, scaled e/ the Russian Roulette probability weight.
-    const double emission = intersection.object->emission;
-    color = color + m_Vector(emission, emission, emission) * rr_factor;
-
-    double ktot = intersection.object->kd + intersection.object->ks + intersection.object->kr;
-    double m_random_float = m_RND_2;
-
-    if (m_random_float < intersection.object->kd) // send a diffuse ray
-    {
-        ray.direction = HemisphereSampling(normal_at_hit_point);
-
-        double cosine_t = ray.direction.DotProduct(normal_at_hit_point);
-        m_Vector tmp;
-        m_PathTracer(ray, depth+1, tmp);
-        color = color + (tmp.Multiply(intersection.object->color)) * cosine_t * 0.1 * rr_factor;
-    }
-    else
-        if (m_random_float < (intersection.object->kd + intersection.object->ks)) // send a specular ray
-        {
-
-            double cosine_t = ray.direction.DotProduct(normal_at_hit_point);
-            ray.direction = (ray.direction - normal_at_hit_point*(2*cosine_t)).Normalize();
-            m_Vector tmp_color = m_Vector(0,0,0);
-            m_PathTracer(ray, depth+1, tmp_color);
-            color = color + tmp_color * rr_factor;
-        }
-        else // send a transmission (refraction) ray
-        {
-            ray.direction = ProcessTransmissionRay (normal_at_hit_point, ray.direction);
-            m_Vector tmp_color;
-            m_PathTracer(ray, depth+1, tmp_color);
-            color = color + tmp_color * 1.15 * rr_factor;
-        }
-    ----------
-    */
 }
 
 void Scene::emit_photons(int num_photons)

@@ -42,7 +42,7 @@ void SetupCornellBox(Scene *s, int width, int height)
     Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
     Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
 
-    Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(0.5, 0.5, 0.5), Color(0, 0, 0), 1);
+    Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1);
 	scene.lights.push_back(light);
 
 	// Ceiling
@@ -149,6 +149,7 @@ int main(int argc, char *argv[])
 	image.resize(width * height * 4);
 
     scene.emit_photons(10);
+    return 0;
 
     Color *resultImg = scene.Render();
 
