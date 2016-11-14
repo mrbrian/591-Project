@@ -31,6 +31,14 @@ void photon::set_color(Color dir)
     p[3] = 0;//(char)(dir.R() * 255);
 }
 
+Color *photon::get_color()
+{
+    return new Color(
+            (double)p[0] / 255,
+            (double)p[1] / 255,
+            (double)p[2] / 255);
+}
+
 Point3D photon::get_position()
 {
     return Point3D(x, y, z);

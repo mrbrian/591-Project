@@ -16,6 +16,7 @@ struct photon {
     void set_position(Point3D p);
     void set_direction(Vector3D dir);
     void set_color(Color dir);
+    Color *get_color();
     Point3D get_position();
     Vector3D get_direction();
 };

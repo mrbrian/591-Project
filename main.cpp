@@ -37,10 +37,10 @@ void SetupCornellBox(Scene *s, int width, int height)
 	float img_plane_w = 0.5f;
 	scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
 
-    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(1, 1, 1), 1000, Color(0, 0, 0));
-    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(1, 1, 1), 100, Color(0, 0, 0));
-    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
-    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(1, 1, 1), 10, Color(0, 0, 0));
+    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1000, Color(0, 0, 0));
+    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 100, Color(0, 0, 0));
+    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
 
     Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(0.5, 0.5, 0.5), Color(0, 0, 0), 1);
 	scene.lights.push_back(light);
@@ -62,7 +62,7 @@ void SetupCornellBox(Scene *s, int width, int height)
 		Point3D(-0.653, 2.74, -7.224),
 		Point3D(0.653, 2.74, -7.224),
 		mat_red);
-	scene.objects.push_back(light_q);
+    //scene.objects.push_back(light_q);
 
 	// Green wall on right
 	Quad *q_2 = new Quad(

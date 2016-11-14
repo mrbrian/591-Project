@@ -32,6 +32,7 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         while (dir.length2() > 1);
         photon *p = new photon;
         p->set_position(position);
+        dir.normalize();
         p->set_direction(dir);
 
         out_photons->push_back(p);
@@ -227,8 +228,13 @@ SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, doub
 	return hitObject;
 }
 
-bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *out_pos, Vector3D *out_norm, Color *out_clr, Material *out_mat)
+bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Color *_out_clr, Material *_out_mat)
 {
+    Point3D &out_pos = *_out_pos;
+    Vector3D &out_norm = *_out_norm;
+    Color &out_clr = *_out_clr;
+    Material &out_mat = *_out_mat;
+
 	double t_min = INFINITY;
 	Vector3D n_min;
 	SceneObject *hitObject = NULL;
@@ -242,19 +248,15 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
 	if (hitObject == NULL)              // check for no intersection
         return false;
 
-    Material &mat = *out_mat;
-    mat = *hitObject->material;
+    out_mat = *hitObject->material;
 
-    Point3D &p_int = *out_pos;
-    p_int = in_pos + t_min * in_dir;      // calculate intersection point
+    out_pos = in_pos + t_min * in_dir;      // calculate intersection point
     //p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
 
-    Vector3D &n = *out_norm;
-    n = n_min;
+    out_norm = n_min;
 
-    // add diffuse color
-    Color &clr = *out_clr;
-    clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
+    // add diffuse color    
+    //out_clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
     return true;
 }
 
@@ -268,19 +270,19 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 
     Point3D start_pos = Point3D(in_pho->x, in_pho->y, in_pho->z);
     Vector3D direction = in_pho->get_direction();
-    Color *clr;// = in_pho->p;
+    Color *clr = in_pho->get_color();
 
-    Point3D *i_point;
-    Vector3D *i_normal;
-    Color *i_clr;
-    Material *i_mat;
+    Point3D i_point;
+    Vector3D i_normal;
+    Color i_clr;
+    Material i_mat;
 
-    if (!trace_primary_ray(start_pos, direction, clr, i_point, i_normal, i_clr, i_mat))
+    if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_clr, &i_mat))
         return;
 
-    RayType ray_type = russian_roulette(i_mat);
+    RayType ray_type = russian_roulette(&i_mat);
 
-    bounce_photon(ray_type, i_point, i_normal, i_clr, depth, out_list);
+    bounce_photon(ray_type, &i_point, &i_normal, &i_clr, depth, out_list);
 
     /*
     // subtract energy depending on absorption
@@ -369,15 +371,12 @@ void Scene::emit_photons(int num_photons)
     vector<photon*> photons;
     vector<photon*> out_photons;
 
-    spawn_photons(num_photons, &photons);    // spawn initial photons for all lights
+    initialize_photons(num_photons, &photons);    // spawn initial photons for all lights
 
     for(std::vector<photon*>::iterator it = photons.begin(); it != photons.end(); ++it)
     {
         photon *obj = (*it);
-        //trace_photon(obj, 0, &out_photons);
-        Vector3D p = obj->get_position();
-        Vector3D d = obj->get_direction();
-        printf("%f,%f,%f - %f,%f,%f\n", p[0], p[1], p[2], d[0], d[1], d[2]);
+        trace_photon(obj, 0, &out_photons);
     }
 }
 
@@ -429,7 +428,7 @@ Scene::RayType Scene::russian_roulette(Material *mat)   // [0, d] diffuse reflec
     return RayType::Transmission;
 }
 
-void Scene::spawn_photons(int num_photons, vector<photon*> *out_photons)
+void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
 {
     double total_watts = 0;
     double energy_per_photon = 0;

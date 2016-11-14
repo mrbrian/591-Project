@@ -120,7 +120,7 @@ public:
     void emit_photons(int num_photons);
     void bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Color *i_clr, int depth, vector<photon*> *out_list);
     RayType russian_roulette(Material *mat);
-    void spawn_photons(int num_photons, vector<photon*> *out_photons);
+    void initialize_photons(int num_photons, vector<photon*> *out_photons);
 
     void Transform(Matrix4x4 m)
     {
