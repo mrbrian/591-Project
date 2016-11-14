@@ -148,7 +148,6 @@ int main(int argc, char *argv[])
 	image.resize(width * height * 4);
 
     scene.emit_photons(10);
-    return 0;
 
     Color *resultImg = scene.Render();
 

@@ -319,9 +319,16 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
     Material i_mat;
 
     if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, &i_mat))
+    {
+        printf("miss %d: %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2], direction[0], direction[1], direction[2]);
         return;
+    }
 
+    printf("%d: %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2], direction[0], direction[1], direction[2]);
     RayType ray_type = russian_roulette(&i_mat);
+
+    if (ray_type == RayType::Diffuse)
+        i_clr = i_mat.Kd;
 
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
 
@@ -451,7 +458,7 @@ void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, 
     new_photon = new photon();
     new_photon->set_position(new_pos);
     new_photon->set_direction(new_dir);
-    printf("%d: %f %f %f\n", depth, (*i_pos)[0], (*i_pos)[1], (*i_pos)[2]);
+    new_photon->set_color(*i_clr);
 
     trace_photon(new_photon, depth + 1, out_list);
 }
