@@ -150,10 +150,9 @@ int main(int argc, char *argv[])
 
     vector<photon*> *photon_map = new vector<photon*>;
     scene.emit_photons(50, photon_map);
-    scene.Render(photon_map);
-    return 0;
+    Color *resultImg = scene.Render(photon_map);
 
-    Color *resultImg = scene.Render();
+    //Color *resultImg = scene.Render();
 
 	for (int x = 0; x < width; x++)
 	{

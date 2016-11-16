@@ -389,6 +389,14 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
             direction[0], direction[1], direction[2],
             i_clr.R(), i_clr.G(), i_clr.B()
             );
+
+    // store photon in photon list
+    photon *store_photon = new photon();
+    store_photon->set_position(i_point);
+    store_photon->set_direction(direction);
+    store_photon->set_color(i_clr);
+    out_list->push_back(store_photon);
+
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
 }
 
@@ -405,7 +413,8 @@ void Scene::emit_photons(int num_photons, vector<photon*> *photon_map)
     }
 }
 
-void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Vector3D *i_reflect, Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list)
+void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Vector3D *i_reflect,
+                          Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list)
 {
     photon *new_photon;
     Vector3D new_dir;
