@@ -143,12 +143,20 @@ Point2D Scene::calc_image_coords(Point3D pt)
     Matrix4x4 *m_view = cam.calc_view_matrix();
     Matrix4x4 *m_projection = cam.calc_proj_matrix();
 
+    int width = cam.imgWidth;
+    int height = cam.imgHeight;
+
+    Matrix4x4 m_screenCoords = Matrix4x4();           // make transform for converting NDC space to screenspace
+    m_screenCoords[0][0] = width / 2;
+    m_screenCoords[1][1] = -height / 2;
+    m_screenCoords = Matrix4x4::translation(Vector3D(width / 2, height / 2, 0)) * m_screenCoords;
+
     // Apply the view matrix
     pt = (*m_view) * pt;
 
     // Do clipping here...
-    bool skipLine = false;
-    Point3D pt_i;
+    //bool skipLine = false;
+    //Point3D pt_i;
 
     //do_clip();
 
@@ -161,7 +169,7 @@ Point2D Scene::calc_image_coords(Point3D pt)
     pt = Point3D(a_4d[0] / a_4d[3], a_4d[1] / a_4d[3], a_4d[2] / a_4d[3]);
 
     // map to viewport
-    //pt = m_screenCoords * pt;
+    pt = m_screenCoords * pt;
 
     delete(m_view);
     delete(m_projection);
@@ -184,11 +192,15 @@ Color *Scene::Render(vector<photon*> *photon_map)
 
     for(std::vector<photon*>::iterator it = photon_map->begin(); it != photon_map->end(); ++it)
     {
-        photon *p= (*it);
+        photon *p = (*it);
 
         // calc image space coordinates
         Point2D img_coords = calc_image_coords(p->get_position());
-        //draw_photon(p);
+        int x = (int)img_coords[0];
+        int y = (int)img_coords[1];
+
+        Color &pixel = result[x + y * cam.imgWidth];
+        pixel = *(p->get_color());
     }
 
     return result;

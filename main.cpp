@@ -30,12 +30,28 @@ void SetupCornellBox(Scene *s, int width, int height)
 
 	cam.imgWidth = width;
 	cam.imgHeight = height;
-	cam.lookAt = Point3D(0, 0, -1);
-	cam.position = Point3D(0, 0, 0);
+    cam.lookAt = Point3D(0, 0, -1);
+    cam.position = Point3D(0, 0, 0);
+    cam.fov = 60.0 / 180 * M_PI;
+    cam.near = 1;
+    cam.far = 10;
+    cam.aspect = (float)width / height;
 
 	scene.cam = cam;
 	float img_plane_w = 0.5f;
-	scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
+    scene.imgPlane = cam.calc_img_plane();
+    for (int y = 0; y < 4; y++)
+    {
+        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
+
+
+    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
+
+    for (int y = 0; y < 4; y++)
+    {
+        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
 
     Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1000, Color(0, 0, 0));
     Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 100, Color(0, 0, 0));
@@ -150,9 +166,9 @@ int main(int argc, char *argv[])
 
     vector<photon*> *photon_map = new vector<photon*>;
     scene.emit_photons(50, photon_map);
-    Color *resultImg = scene.Render(photon_map);
+ //   Color *resultImg = scene.Render(photon_map);
 
-    //Color *resultImg = scene.Render();
+    Color *resultImg = scene.Render();
 
 	for (int x = 0; x < width; x++)
 	{
