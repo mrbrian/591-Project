@@ -50,9 +50,10 @@ public:
     double aspect;
     double near;
     double far;
+    Matrix4x4 m_view;
 
     Matrix4x4 *calc_proj_matrix();
-    Matrix4x4 *calc_view_matrix();
+    Matrix4x4 get_view_matrix();
     Plane *calc_img_plane();
 };
 

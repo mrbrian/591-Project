@@ -15,13 +15,9 @@ Matrix4x4 *Camera::calc_proj_matrix()
     return result;
 }
 
-Matrix4x4 *Camera::calc_view_matrix()
+Matrix4x4 Camera::get_view_matrix()
 {
-    Matrix4x4 *result = new Matrix4x4();
-    Matrix4x4 &m_view = *result;
-
-    m_view = Matrix4x4::translation(position);
-    return result;
+    return m_view;
 }
 
 Plane *Camera::calc_img_plane()
@@ -30,14 +26,14 @@ Plane *Camera::calc_img_plane()
     double x1 = std::tan(fov / 2) * near;
     double y1 = std::tan(fov / 2) * near;
     Plane *result = new Plane(
-                Point3D(-x1, y1, -near),
-                Point3D(-x1, -y1, -near),
-                Point3D(x1, -y1, -near),
-                Point3D(x1, y1, -near)
+                Point3D(-x1, y1, near),
+                Point3D(-x1, -y1, near),
+                Point3D(x1, -y1, near),
+                Point3D(x1, y1, near)
             );
-    Matrix4x4 *m_view = calc_view_matrix();
-    result->Transform(*m_view);
-    delete(m_view);
+    Matrix4x4 m_view = get_view_matrix();
+    result->Transform(m_view);
+    //delete(m_view);
 
     return result;
     // new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));

@@ -140,11 +140,11 @@ Color *Scene::Render()
 
 Point2D Scene::calc_image_coords(Point3D pt)
 {
-    Matrix4x4 *m_view = cam.calc_view_matrix();
+    Matrix4x4 m_view = cam.get_view_matrix();
     Matrix4x4 *m_projection = cam.calc_proj_matrix();
 
-    int width = cam.imgWidth;
-    int height = cam.imgHeight;
+    float width = cam.imgWidth;
+    float height = cam.imgHeight;
 
     Matrix4x4 m_screenCoords = Matrix4x4();           // make transform for converting NDC space to screenspace
     m_screenCoords[0][0] = width / 2;
@@ -152,7 +152,7 @@ Point2D Scene::calc_image_coords(Point3D pt)
     m_screenCoords = Matrix4x4::translation(Vector3D(width / 2, height / 2, 0)) * m_screenCoords;
 
     // Apply the view matrix
-    pt = (*m_view) * pt;
+    pt = m_view * pt;
 
     // Do clipping here...
     //bool skipLine = false;
@@ -171,7 +171,7 @@ Point2D Scene::calc_image_coords(Point3D pt)
     // map to viewport
     pt = m_screenCoords * pt;
 
-    delete(m_view);
+    //delete(m_view);
     delete(m_projection);
 
     return Point2D(pt[0], pt[1]);
