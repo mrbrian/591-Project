@@ -198,7 +198,9 @@ Color *Scene::Render(vector<photon*> *photon_map)
         Point2D img_coords = calc_image_coords(p->get_position());
         int x = (int)img_coords[0];
         int y = (int)img_coords[1];
-
+        int idx = x + y * cam.imgWidth;
+        if (idx < 0 || idx >= cam.imgHeight * cam.imgWidth)
+            continue;
         Color &pixel = result[x + y * cam.imgWidth];
         pixel = *(p->get_color());
     }

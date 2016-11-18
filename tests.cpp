@@ -45,12 +45,13 @@ void proj_point()
 {
     printf("proj_point\n");
     vector<photon*> p_list;
-    photon *p = new photon();
-    p->set_position(Point3D(1,0,1));
-    p->set_direction(Vector3D(0,0,1));
-    p->set_color(Color(1,0,1));
-    p_list.push_back(p);
-
+    {
+        photon *p = new photon();
+        p->set_position(Point3D(1,0,1));
+        p->set_direction(Vector3D(0,0,1));
+        p->set_color(Color(1,0,1));
+        p_list.push_back(p);
+    }
     photon *p2 = new photon();
     p2->set_position(Point3D(0,1,1));
     p2->set_direction(Vector3D(0,0,1));
@@ -62,6 +63,14 @@ void proj_point()
     p3->set_direction(Vector3D(0,0,1));
     p3->set_color(Color(0,1,0));
     p_list.push_back(p3);
+
+    {
+        photon *p = new photon();
+        p->set_position(Point3D(-1,-1,1));
+        p->set_direction(Vector3D(1,0,0));
+        p->set_color(Color(1,1,0));
+        p_list.push_back(p);
+    }
 
     Scene s;
     s.cam.position = Point3D(0,0,0);

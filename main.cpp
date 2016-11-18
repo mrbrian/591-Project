@@ -32,22 +32,27 @@ void SetupCornellBox(Scene *s, int width, int height)
 	cam.imgHeight = height;
     cam.lookAt = Point3D(0, 0, -1);
     cam.position = Point3D(0, 0, 0);
-    cam.fov = 60.0 / 180 * M_PI;
+    cam.fov = 53.1301024 / 180 * M_PI;
     cam.near = 1;
     cam.far = 10;
     cam.aspect = (float)width / height;
 
 	scene.cam = cam;
-	float img_plane_w = 0.5f;
+    float img_plane_w = 0.5f;
+    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
+    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+
     scene.imgPlane = cam.calc_img_plane();
     for (int y = 0; y < 4; y++)
     {
         printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
     }
 
-
-    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
-
+   // scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
+    for (int y = 0; y < 4; y++)
+    {
+        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
     for (int y = 0; y < 4; y++)
     {
         printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
@@ -165,8 +170,8 @@ int main(int argc, char *argv[])
 	image.resize(width * height * 4);
 
     vector<photon*> *photon_map = new vector<photon*>;
-    scene.emit_photons(50, photon_map);
- //   Color *resultImg = scene.Render(photon_map);
+    scene.emit_photons(100000, photon_map);
+
 
     Color *resultImg = scene.Render();
 
@@ -185,6 +190,24 @@ int main(int argc, char *argv[])
 	}
     // save to file
     unsigned int error = lodepng::encode(outputStr, image, width, height);
+
+    resultImg = scene.Render(photon_map);
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            int idx = x + y * scene.cam.imgWidth;
+            Color &c = resultImg[idx];
+            // clamp rgb values [0,1]
+            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
+            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
+            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
+            image[4 * idx + 3] = 255;
+        }
+    }
+    // save to file
+    error = lodepng::encode("photons", image, width, height);
 
 	/*if there's an error, display it*/
 	if (error) 
