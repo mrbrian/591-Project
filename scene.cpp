@@ -147,8 +147,8 @@ Point2D Scene::calc_image_coords(Point3D pt)
     float height = cam.imgHeight;
 
     Matrix4x4 m_screenCoords = Matrix4x4();           // make transform for converting NDC space to screenspace
-    m_screenCoords[0][0] = width / 2;
-    m_screenCoords[1][1] = -height / 2;
+    m_screenCoords[0][0] = -width / 2;
+    m_screenCoords[1][1] = height / 2;
     m_screenCoords = Matrix4x4::translation(Vector3D(width / 2, height / 2, 0)) * m_screenCoords;
 
     // Apply the view matrix

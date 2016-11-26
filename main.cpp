@@ -4,6 +4,7 @@
 #include "scene.h"
 #include <vector>
 #include <iostream>
+#include "kdtree/kdtree.h"
 
 #define DEF_WIDTH   250
 #define DEF_HEIGHT  250
@@ -30,12 +31,12 @@ void SetupCornellBox(Scene *s, int width, int height)
 
 	cam.imgWidth = width;
 	cam.imgHeight = height;
-    cam.lookAt = Point3D(0, 0, -1);
+    //cam.lookAt = Point3D(0, 0, -1);
     cam.position = Point3D(0, 0, 0);
     cam.fov = 53.1301024 / 180 * M_PI;
     cam.near = 1;
     cam.far = 10;
-    cam.aspect = (float)width / height;
+    cam.aspect = 1;//(float)width / height;
 
 	scene.cam = cam;
     float img_plane_w = 0.5f;
@@ -48,11 +49,7 @@ void SetupCornellBox(Scene *s, int width, int height)
         printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
     }
 
-   // scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
-    for (int y = 0; y < 4; y++)
-    {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
-    }
+    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
     for (int y = 0; y < 4; y++)
     {
         printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
@@ -86,7 +83,7 @@ void SetupCornellBox(Scene *s, int width, int height)
     scene.objects.push_back(light_q);
     */
 
-	// Green wall on right
+    // Green wall on left
 	Quad *q_2 = new Quad(
 		Point3D(-2.75, 2.75, -10.5),
 		Point3D(-2.75, 2.75, -5),
@@ -95,7 +92,7 @@ void SetupCornellBox(Scene *s, int width, int height)
 		mat_grn);
 	scene.objects.push_back(q_2);
 
-	//   // Red wall on left
+    //   // Red wall on right
 	Quad *q_3 = new Quad(
 		Point3D(2.75, 2.75, -10.5),
 		Point3D(2.75, -2.75, -10.5),
@@ -145,6 +142,7 @@ void SetupCornellBox(Scene *s, int width, int height)
 		Matrix4x4::scaling(Vector3D(1.655, 1.655, 1.655)) 
 	);
 	scene.objects.push_back(big_cube);
+    //scene.Transform(Matrix4x4::rotation(M_PI, 'y'));
 }
 
 int main(int argc, char *argv[])
@@ -171,7 +169,6 @@ int main(int argc, char *argv[])
 
     vector<photon*> *photon_map = new vector<photon*>;
     scene.emit_photons(100000, photon_map);
-
 
     Color *resultImg = scene.Render();
 
