@@ -283,19 +283,55 @@ void camera_plane()
 
 void radiance()
 {
-    Scene s;
-    kdtree *kd;
+    // setup scene
+    // shoot photons
+    // put in kd_tree
+    // find nearest photon at some point
 
-    kd_create(3);
+    Scene *scene = Scene::cornellBoxScene(5, 5);
+    Scene &s = *scene;
+
+    kdtree *kd;
+    vector<photon*> photon_map;
+
+    s.emit_photons(10, &photon_map);
+    kd = kd_create(3);
+    for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
+    {
+        photon *obj = *it;
+        kd_insert3f(kd, obj->x, obj->y, obj->z, obj);
+    }
+    //double b[3] = {-1,2.75,-5.6};
+    //kdres *result = kd_nearest_range(kd, b, 20);
+
+    kdres *result = kd_nearest3f(kd, 0,0,0);
+    float x, y, z;
+    photon *data;
+    data = (photon*)kd_res_item_data(result);       // viewing photon data
+    kd_res_item3f(result, &x, &y, &z);
+    kd_res_free(result);
+
+    /* pointer experiments
+    Vector3D test1 = Vector3D(1,2,3);
+    Vector3D *test2 = new Vector3D(6,6,6);
+
+    test1 = *test2;
+    test1[0] = 555;
+    delete (test2);
+    test2 = &test1;
+    test1[0] = 115;*/
+
+    //data->flag = 666;
+    //kd_res_item
     s.Render(kd);
 }
 
 tests::tests()
 {
-    sphericalCoord_1();
+    /*sphericalCoord_1();
     proj_point();
     proj_point2();
-    camera_plane();
+    camera_plane();*/
     radiance();
 }
 

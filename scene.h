@@ -97,7 +97,10 @@ public:
     Plane *imgPlane;
     std::vector<SceneObject*> objects;
     std::vector<Light*> lights;
-    Color * Render();
+
+    static Scene *cornellBoxScene(int width, int height);
+
+    Color *Render();
     Color *Render(vector<photon*> *photon_map);
     Color *Render(kdtree *kd);
 
@@ -108,12 +111,11 @@ public:
     Point2D calc_image_coords(Point3D pt);
 
     // collide photon with the scene objects
-    void trace_photon(photon *in_pho, int depth, vector<photon*> *out_list);
-    void emit_photons(int num_photons, vector<photon*> *photon_map);
-    void bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_norm, Vector3D *i_reflect, Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list);
+    void initialize_photons(int num_photons, vector<photon*> *out_photons);
     RayType russian_roulette(Material *mat);
-    void initialize_photons(int num_photons, vector<photon*> *out_photons);        
-    void SetupCornellBox(int width, int height);
+    void emit_photons(int num_photons, vector<photon*> *photon_map);
+    void trace_photon(photon *in_pho, int depth, vector<photon*> *out_list);
+    void bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_norm, Vector3D *i_reflect, Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list);
 
     void Transform(Matrix4x4 m)
     {

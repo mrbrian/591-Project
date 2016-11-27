@@ -138,7 +138,6 @@ Vector3D HemisphereSampling(Vector3D m_normal)
     return m_rotated_ray_direction;
 }
 
-
 Color *Scene::Render()
 {
     Color * result = new Color[cam.imgWidth * cam.imgHeight];
@@ -479,6 +478,7 @@ void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, 
         return;
     }
     new_photon = new photon();
+    new_photon->normal = *i_normal;
     new_photon->set_position(new_pos);
     new_photon->set_direction(new_dir);
     new_photon->set_color(*i_clr);
@@ -531,13 +531,22 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
 }
 
 // phong brdf
-// incident direction
-// reflected direction
-Color BRDF(Point3D x, Vector3D v, Vector3D pd)
+// x = surfact point
+// pd = incident direction
+// v = reflected direction
+/*
+Color *Scene::BRDF(Point3D x, Vector3D v, Vector3D pd)
 {
+    Color *color;
 
+    Color diff = pd.dot(norm) * Kd;
+    Color spec = pd.dot(v) * Ks;
+
+    color = diff + spec;
+
+    return color;
 }
-
+*/
 Color radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
@@ -572,22 +581,10 @@ Color radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 
         flux = flux + diff + spec;
 
-        //flux += BRDF(x, v, pd) * pw;
+        //flux += BRDF(ph->normal, v, pd) * pw;
 
         photon_set++;
     }
-/*
-    //for (std::vector<photon*>::iterator it = photons->begin(); it != photons->end(); ++it)
-
-    {
-        photon *obj = (*it);
-        Vector3D pd = obj->get_direction();
-        char *pw = obj->p;
-        v = dir to eye;
-        x = end_pt;
-        flux += BRDF(x, v, pd) * pw;
-    }*/
-
     return flux / (2 * M_PI * pow(r,2));
 }
 
@@ -608,14 +605,14 @@ Color *Scene::Render(kdtree *kd)
 
             Color &c = result[x + y * cam.imgWidth];
             SurfacePoint end_pt;
-
+/*
             if (!trace_ray(ray, &end_pt, 1))   // if ray hit nothing
                 c = BG_COLOR;                       // use background color
             else
             {
                 // gather the photons around the end pt
                 c = radiance_estimate(kd, end_pt);
-            }
+            }*/
         }
     }
     return result;
@@ -688,9 +685,10 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
 */
 
 // cornell scene
-void Scene::SetupCornellBox(int width, int height)
+Scene *Scene::cornellBoxScene(int width, int height)
 {
-    Scene &scene = *this;
+    Scene *s = new Scene();
+    Scene &scene = *s;
     Camera cam = Camera();
 
     cam.imgWidth = width;
@@ -807,4 +805,5 @@ void Scene::SetupCornellBox(int width, int height)
     );
     scene.objects.push_back(big_cube);
     //scene.Transform(Matrix4x4::rotation(M_PI, 'y'));
+    return s;
 }

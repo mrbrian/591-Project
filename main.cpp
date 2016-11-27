@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         outputStr = argv[3];
     }
 
-    scene.SetupCornellBox(width, height);
+    scene.cornellBoxScene(width, height);
 
     vector<photon*> *photon_map = new vector<photon*>;
     scene.emit_photons(100000, photon_map);
