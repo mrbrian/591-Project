@@ -154,6 +154,22 @@ public:
         Point3D result = (topleft + (h_pct * right) + (v_pct * down));
         return result;
     }
+
+    Point3D get_plane_point(float u, float v)
+    {
+        Point3D topleft  = points[0];
+        Point3D topright = points[3];
+        Point3D botleft  = points[1];
+
+        Vector3D right = topright - topleft;
+        Vector3D down = topleft - botleft;
+
+        double h_pct = (float)u / right.length();
+        double v_pct = (float)v / down.length();
+
+        Point3D result = (topleft + (h_pct * right) + (v_pct * down));
+        return result;
+    }
 };
 
 class Sphere : public SceneObject

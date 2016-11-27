@@ -13,7 +13,8 @@ HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
     photon.h \
     misc.h \
     tests.h \
-    camera.h
+    camera.h \
+    kdtree/kdtree.h
 SOURCES += algebra.cpp \
            material.cpp \
            polyroots.cpp \

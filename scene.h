@@ -7,8 +7,39 @@
 #include <vector>
 #include "polyroots.h"
 #include "camera.h"
+#include "kdtree/kdtree.h"
 
 using namespace std;
+
+struct SurfacePoint
+{
+public:
+    Point3D position;
+    Vector3D normal;
+    Material material;
+
+    SurfacePoint() {}
+
+    SurfacePoint(Point3D p, Vector3D v, Material m)
+    {
+        position = p;
+        normal = v;
+        material = m;
+    }
+};
+
+struct Ray
+{
+public:
+    Point3D origin;
+    Vector3D direction;
+
+    Ray(Point3D p, Vector3D v)
+    {
+        origin = p;
+        direction = v;
+    }
+};
 
 class Light
 {
@@ -68,7 +99,9 @@ public:
     std::vector<Light*> lights;
     Color * Render();
     Color *Render(vector<photon*> *photon_map);
+    Color *Render(kdtree *kd);
 
+    bool trace_ray(Ray ray, SurfacePoint *end_pt, int depth);
     bool trace_ray(Point3D o, Vector3D v, Color *color, int depth);
     bool trace_ray(Point3D o, Vector3D v, Color *color, Point3D *out_pos, Vector3D *out_norm, Color *out_clr, Material *out_mat, int depth);
     bool trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Vector3D *_out_reflect, Vector3D *_out_refract, Color *_out_clr, Material *_out_mat);   
@@ -79,7 +112,8 @@ public:
     void emit_photons(int num_photons, vector<photon*> *photon_map);
     void bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_norm, Vector3D *i_reflect, Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list);
     RayType russian_roulette(Material *mat);
-    void initialize_photons(int num_photons, vector<photon*> *out_photons);
+    void initialize_photons(int num_photons, vector<photon*> *out_photons);        
+    void SetupCornellBox(int width, int height);
 
     void Transform(Matrix4x4 m)
     {

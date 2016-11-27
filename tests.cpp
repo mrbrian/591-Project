@@ -281,12 +281,22 @@ void camera_plane()
     }
 }
 
+void radiance()
+{
+    Scene s;
+    kdtree *kd;
+
+    kd_create(3);
+    s.Render(kd);
+}
+
 tests::tests()
 {
     sphericalCoord_1();
     proj_point();
     proj_point2();
     camera_plane();
+    radiance();
 }
 
 int main(int argc, char *argv[])

@@ -4,6 +4,29 @@
 #define MAX_DEPTH   5
 #define BG_COLOR    Color(0,0,0)
 
+// -----------------------------------------
+//    RANDOM NUMBER GENERATION
+// -----------------------------------------
+
+// Mersenne Twister 19937 generator
+// A Mersenne Twister pseudo-random generator of 32-bit numbers with a state size of 19937 bits.
+// http://www.cplusplus.com/reference/random/mt19937/
+
+std::mt19937 MersenneTwisterPRNG;
+
+// Uniform real distribution
+// Random number distribution that produces floating-point values according to a uniform distribution,
+// which is described by the following probability density function (...) - more details here:
+// http://www.cplusplus.com/reference/random/uniform_real_distribution/
+
+std::uniform_real_distribution<double> m_URD;
+
+// Hemisphere sampling (i.e., for diffuse reflection)
+// function "m_Vector HemisphereSampling(m_Vector m_normal)" below
+// calls both m_RND_1 and m_RND_2
+#define m_RND_1 (2.0*m_URD(MersenneTwisterPRNG)-1.0)    // [-1,1]
+#define m_RND_2 (m_URD(MersenneTwisterPRNG))        // [0,1]
+
 Light::Light(Point3D pos, Color a, Color d, Color s, double in_watts)
 {
     position = pos;
@@ -505,4 +528,283 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
         int num_to_emit = (int)(obj->watts / energy_per_photon);
         obj->emit_photons(num_to_emit, out_photons);
     }
+}
+
+// phong brdf
+// incident direction
+// reflected direction
+Color BRDF(Point3D x, Vector3D v, Vector3D pd)
+{
+
+}
+
+Color radiance_estimate(kdtree *kd, SurfacePoint end_pt)
+{
+    // how much light is at this point?
+    // locate k nearest photons
+    // how much light from each
+
+    kdres *kdr = kd_nearest3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
+    photon **photon_set = (photon**)kdr; // array of references?
+
+    Vector3D delta = (*photon_set)[0].get_position() - end_pt.position;
+    double r = delta.length();  //distance to kth nearest photon
+    Color flux = Color(0,0,0);
+
+    int num_photons = 1;
+
+    for (int i = 0; i < num_photons; i++)
+    {
+        photon *ph = *photon_set;
+        Vector3D pd = ph->get_direction();
+        unsigned char *pw = ph->p;
+
+        Color diff;
+        Color spec;
+
+        Vector3D norm = end_pt.normal;
+        Vector3D light_dir = ph->get_direction(); // incoming light
+        Vector3D eye_dir = ph->get_direction(); // eye direction
+        Vector3D ref_dir = light_dir + (2 * norm.dot(-light_dir)) * norm;
+
+        diff = light_dir.dot(end_pt.normal) * end_pt.material.Kd;
+        spec = pow(ref_dir.dot(eye_dir), end_pt.material.p) * end_pt.material.Ks;
+
+        flux = flux + diff + spec;
+
+        //flux += BRDF(x, v, pd) * pw;
+
+        photon_set++;
+    }
+/*
+    //for (std::vector<photon*>::iterator it = photons->begin(); it != photons->end(); ++it)
+
+    {
+        photon *obj = (*it);
+        Vector3D pd = obj->get_direction();
+        char *pw = obj->p;
+        v = dir to eye;
+        x = end_pt;
+        flux += BRDF(x, v, pd) * pw;
+    }*/
+
+    return flux / (2 * M_PI * pow(r,2));
+}
+
+Color *Scene::Render(kdtree *kd)
+{
+    Color * result = new Color[cam.imgWidth * cam.imgHeight];
+    // iterate over the pixels & set colour values
+    for (int x = 0; x < cam.imgWidth; x++)
+    {
+        for (int y = 0; y < cam.imgHeight; y++)
+        {
+            // determine ray vector
+            Point3D p = imgPlane->ImageToWorldSpace(x, y, cam.imgWidth, cam.imgHeight);
+            Vector3D v = p - cam.position;
+            v.normalize();
+
+            Ray ray = Ray(p, v);
+
+            Color &c = result[x + y * cam.imgWidth];
+            SurfacePoint end_pt;
+
+            if (!trace_ray(ray, &end_pt, 1))   // if ray hit nothing
+                c = BG_COLOR;                       // use background color
+            else
+            {
+                // gather the photons around the end pt
+                c = radiance_estimate(kd, end_pt);
+            }
+        }
+    }
+    return result;
+}
+/*
+bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
+{
+    if (depth > MAX_DEPTH)  // stop recursing
+        return false;
+
+    double t_min = INFINITY;
+    Vector3D n_min;
+    SceneObject *hitObject = NULL;
+    Vector3D v = ray.direction;
+    v.normalize();
+
+    Color &col = *color;
+    if (depth == 1)         // start ... with no colour
+        col = Color(0,0,0);
+
+    for(std::vector<SceneObject*>::iterator it = objects.begin(); it != objects.end(); ++it)
+    {
+        SceneObject *obj = (*it);
+
+        Vector3D n;
+        double t = obj->intersect(o, v, &n);      // whats the n?
+
+        if (0 <= t && t < t_min)
+        {
+            t_min = t;
+            if (n.dot(v) >= 0)
+                n = -n;
+            n_min = n;
+            hitObject = obj;
+        }
+    }
+
+    if (hitObject == NULL)              // check for no intersection
+    {
+        return false;
+    }
+
+    Point3D p_int = o + t_min * v;      // calculate intersection point
+
+    p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
+
+    // found closest intersection
+    Point3D p = o + t_min * v;
+
+    Vector3D n = n_min;
+    Vector3D l = light->position - p;
+    l.normalize();
+    Vector3D r = -l + 2 * (l.dot(n)) * n;
+
+    // add radiance estimate
+    //radiance_estimate(kd,);
+
+    Color reflect_rgb;     // reflection color;
+
+    // calculate reflect vector
+    Vector3D r = v + (2 * n_min.dot(-v)) * n_min;
+
+    Ray new_ray = Ray(p_int, r);
+
+    trace_ray(new_ray, p_int, r, &reflect_rgb, depth + 1);
+    // add reflection color
+    col = col + reflect_rgb * hitObject->material->Kr;
+    return true;
+}
+*/
+
+// cornell scene
+void Scene::SetupCornellBox(int width, int height)
+{
+    Scene &scene = *this;
+    Camera cam = Camera();
+
+    cam.imgWidth = width;
+    cam.imgHeight = height;
+    //cam.lookAt = Point3D(0, 0, -1);
+    cam.position = Point3D(0, 0, 0);
+    cam.fov = 53.1301024 / 180 * M_PI;
+    cam.near = 1;
+    cam.far = 10;
+    cam.aspect = 1;//(float)width / height;
+
+    scene.cam = cam;
+    float img_plane_w = 0.5f;
+    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
+    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+
+    scene.imgPlane = cam.calc_img_plane();
+    for (int y = 0; y < 4; y++)
+    {
+        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
+
+    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
+    for (int y = 0; y < 4; y++)
+    {
+        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
+
+    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1000, Color(0, 0, 0));
+    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 100, Color(0, 0, 0));
+    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
+
+    Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1);
+    scene.lights.push_back(light);
+
+    // Ceiling
+    Quad *q_1 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(2.75, 2.75, -5),
+        Point3D(-2.75, 2.75, -5),
+        Point3D(-2.75, 2.75, -10.5),
+        mat_ceil);
+
+    scene.objects.push_back(q_1);
+
+    // Ceiling light
+    /*Quad *light_q = new Quad(
+        Point3D(0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -7.224),
+        Point3D(0.653, 2.74, -7.224),
+        mat_red);
+    scene.objects.push_back(light_q);
+    */
+
+    // Green wall on left
+    Quad *q_2 = new Quad(
+        Point3D(-2.75, 2.75, -10.5),
+        Point3D(-2.75, 2.75, -5),
+        Point3D(-2.75, -2.75, -5),
+        Point3D(-2.75, -2.75, -10.5),
+        mat_grn);
+    scene.objects.push_back(q_2);
+
+    //   // Red wall on right
+    Quad *q_3 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(2.75, -2.75, -10.5),
+        Point3D(2.75, -2.75, -5),
+        Point3D(2.75, 2.75, -5),
+        mat_red);
+    scene.objects.push_back(q_3);
+
+    //   // Floor
+    Quad *q_4 = new Quad(
+        Point3D(2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -5),
+        Point3D(2.75, -2.75, 5),
+        mat_floor);
+    scene.objects.push_back(q_4);
+
+    // Back wall
+    Quad *q_5 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(-2.75, 2.75, -10.5),
+        Point3D(-2.75, -2.75, -10.5),
+        Point3D(2.75, -2.75, -10.5),
+        mat_floor);
+    scene.objects.push_back(q_5);
+
+    Cube *sml_cube = new Cube(
+        Point3D(0, 0, 0),
+        0.5,
+        mat_ceil
+    );
+    sml_cube->Transform(
+        Matrix4x4::translation(Vector3D(-0.929, -2.75 + 3.31 / 2, -8.482)) *
+        Matrix4x4::rotation(misc::degToRad(-18.809), 'y') *
+        Matrix4x4::scaling(Vector3D(1.659, 3.31, 1.659))
+    );
+    scene.objects.push_back(sml_cube);
+
+    Cube *big_cube = new Cube(
+        Point3D(0,0,0),
+        0.5,
+        mat_ceil
+    );
+    big_cube->Transform(
+        Matrix4x4::translation(Vector3D(0.933, -2.75 + 1.655 / 2, -6.648)) *
+        Matrix4x4::rotation(misc::degToRad(16.303), 'y') *
+        Matrix4x4::scaling(Vector3D(1.655, 1.655, 1.655))
+    );
+    scene.objects.push_back(big_cube);
+    //scene.Transform(Matrix4x4::rotation(M_PI, 'y'));
 }
