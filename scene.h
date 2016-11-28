@@ -13,28 +13,28 @@ using namespace std;
 class Light
 {
 public:
-    Light(Point3D pos, Color a, Color d, Color s, double in_watts);
     Color Ia;      // ambient
     Color Id;      // diffuse
     Color Is;      // specular
     Point3D position;
     double watts;
 
-    void emit_photons(int to_emit, vector<photon*> *out_photons);
+    Light(Point3D pos, Color a, Color d, Color s, double in_watts);
+    virtual void emit_photons(int to_emit, vector<photon*> *out_photons);
 
-    void Transform(Matrix4x4 m)
+    virtual void Transform(Matrix4x4 m)
     {
         position = m * position;
-    }        
+    }
 };
 
-class LightObject
+class LightObject : public Light
 {
 public:
-    Light *light;
     SceneObject *obj;
 
-    LightObject(Light *light, SceneObject *obj);
+    LightObject(Point3D pos, Color a, Color d, Color s, double in_watts, SceneObject *obj);
+    void emit_photons(int to_emit, vector<photon*> *out_photons) override;
 };
 
 class ImagePlane

@@ -41,6 +41,42 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
     }
 }
 
+LightObject::LightObject(Point3D pos, Color a, Color d, Color s, double in_watts, SceneObject *o)
+    : Light(pos, a, d, s, in_watts)
+{
+    obj = o;
+
+}
+
+void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
+{
+    int num_emit = 0;
+    while (num_emit < to_emit)
+    {
+        double x;
+        double y;
+        double z;
+        Vector3D dir;
+        do
+        {
+            x = m_RND_1;
+            y = m_RND_1;
+            z = m_RND_1;
+            dir = Vector3D(x, y, z);
+        }
+        while (dir.length2() > 1);
+        photon *p = new photon;
+        Point3D p_pos = obj->point_on_surface();
+        p->set_position(p_pos);
+        dir.normalize();
+        p->set_direction(dir);
+        p->set_color(Id);       // only using the diffuse color..(?)
+
+        out_photons->push_back(p);
+        num_emit++;
+    }
+}
+
 // ----------------------------------------------------------------------------
 // BuildOrthonormalSystem ()
 //

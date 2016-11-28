@@ -5,6 +5,8 @@
 #include "material.h"
 #include "polyroots.h"
 
+extern double RAND_2();
+
 class SceneObject
 {
 public:
@@ -17,6 +19,11 @@ public:
     virtual void Transform(Matrix4x4 m)
     {
         m = 0;
+    }
+
+    virtual Point3D point_on_surface()
+    {
+        return Point3D(-1,-1,-1);
     }
 
     virtual double intersect(Point3D o, Vector3D v, Vector3D *n)
@@ -150,6 +157,23 @@ public:
 
         double h_pct = (float)x / imgWidth;
         double v_pct = (float)y / imgHeight;
+
+        Point3D result = (topleft + (h_pct * right) + (v_pct * down));
+        return result;
+    }
+
+    Point3D point_on_surface() override
+    {
+        // return a random point on surface
+        Point3D topleft  = points[0];
+        Point3D topright = points[1];
+        Point3D botleft  = points[3];
+
+        Vector3D right = topright - topleft;
+        Vector3D down = botleft - topleft;
+
+        double h_pct = RAND_2();
+        double v_pct = RAND_2();
 
         Point3D result = (topleft + (h_pct * right) + (v_pct * down));
         return result;

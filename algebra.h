@@ -83,7 +83,7 @@ public:
     v_[0] = other.v_[0];
     v_[1] = other.v_[1];
     v_[2] = other.v_[2];
-  }
+  } 
 
   Point3D& operator =(const Point3D& other)
   {
@@ -250,6 +250,11 @@ private:
 inline Vector3D operator *(double s, const Vector3D& v)
 {
   return Vector3D(s*v[0], s*v[1], s*v[2]);
+}
+
+inline Point3D operator *(double s, const Point3D& v)
+{
+  return Point3D(s*v[0], s*v[1], s*v[2]);
 }
 
 inline Vector3D operator +(const Vector3D& a, const Vector3D& b)

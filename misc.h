@@ -23,6 +23,11 @@ std::uniform_real_distribution<double> m_URD;
 // Hemisphere sampling (i.e., for diffuse reflection)
 // function "m_Vector HemisphereSampling(m_Vector m_normal)" below
 // calls both m_RND_1 and m_RND_2
+double RAND_2()
+{
+    return (m_URD(MersenneTwisterPRNG));    // [-1,1]
+}
+
 #define m_RND_1 (2.0*m_URD(MersenneTwisterPRNG)-1.0)    // [-1,1]
 #define m_RND_2 (m_URD(MersenneTwisterPRNG))        // [0,1]
 
