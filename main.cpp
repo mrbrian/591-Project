@@ -42,29 +42,8 @@ void render_photons(Scene scene, vector<photon*> *photon_map, const char* output
 
     Color *resultImg = scene.Render(photon_map);
 
-    // create new image
-    std::vector<unsigned char> image;
-    image.resize(width * height * 4);
-
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            int idx = x + y * scene.cam.imgWidth;
-            Color &c = resultImg[idx];
-            // clamp rgb values [0,1]
-            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
-            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
-            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
-            image[4 * idx + 3] = 255;
-        }
-    }
-    // save to file
-    unsigned int error = lodepng::encode(outputStr, image, width, height);
-
-    /*if there's an error, display it*/
-    if (error)
-        printf("error %u: %s\n", error, lodepng_error_text(error));
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
 }
 
 
@@ -79,32 +58,14 @@ void normal_render(Scene scene, const char* outputStr)
 
     Color *resultImg = scene.Render();
 
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            int idx = x + y * scene.cam.imgWidth;
-            Color &c = resultImg[idx];
-            // clamp rgb values [0,1]
-            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
-            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
-            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
-            image[4 * idx + 3] = 255;
-        }
-    }
-    // save to file
-    unsigned int error = lodepng::encode(outputStr, image, width, height);
-
-    /*if there's an error, display it*/
-    if (error)
-        printf("error %u: %s\n", error, lodepng_error_text(error));
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
 }
 
-void final_render(Scene scene, vector<photon*> *photons, const char* filename)
+void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
-    Color *resultImg = scene.Render();
 
     void *tree = make_kdtree(photons);
 
@@ -112,23 +73,10 @@ void final_render(Scene scene, vector<photon*> *photons, const char* filename)
     std::vector<unsigned char> image;
     image.resize(width * height * 4);
 
-    scene.Render((kdtree*)tree);
+    Color *resultImg = scene.Render((kdtree*)tree);
 
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            int idx = x + y * scene.cam.imgWidth;
-            Color &c = resultImg[idx];
-            // clamp rgb values [0,1]
-            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
-            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
-            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
-            image[4 * idx + 3] = 255;
-        }
-    }
-    // save to file
-    unsigned int error = lodepng::encode(filename, image, width, height);
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
 }
 
 int main(int argc, char *argv[])
@@ -147,14 +95,14 @@ int main(int argc, char *argv[])
         outputStr = argv[3];
     }
 
-    scene.cornellBoxScene(width, height);
+    scene = *Scene::cornellBoxScene(width, height);
 
-    vector<photon*> *photon_map = new vector<photon*>;
-    scene.emit_photons(100000, photon_map);
+    vector<photon*> photon_map;
+    scene.emit_photons(100000, &photon_map);
 
     normal_render(scene, "standard");
-    render_photons(scene, photon_map, "photons");
-    final_render(scene, photon_map, "final");
+    render_photons(scene, &photon_map, "photons");
+    final_render(scene, &photon_map, "final");
 
     // application successfully returned
     return 0;

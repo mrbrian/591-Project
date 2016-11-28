@@ -21,7 +21,8 @@ SOURCES += algebra.cpp \
            scene.cpp \
            lodepng/lodepng.cpp \
     photon.cpp \
-    camera.cpp
+    camera.cpp \
+    misc.cpp
 
 unix:!macx: LIBS += -L$$PWD/../kdtree/ -lkdtree
 

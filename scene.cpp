@@ -1,5 +1,4 @@
 #include "scene.h"
-#include "misc.h"
 
 #define MAX_DEPTH   5
 #define BG_COLOR    Color(0,0,0)
@@ -24,9 +23,9 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         Vector3D dir;
         do
         {
-            x = m_RND_1;
-            y = m_RND_1;
-            z = m_RND_1;
+            x = misc::RAND_1();
+            y = misc::RAND_1();
+            z = misc::RAND_1();
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
@@ -59,9 +58,9 @@ void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
         Vector3D dir;
         do
         {
-            x = m_RND_1;
-            y = m_RND_1;
-            z = m_RND_1;
+            x = misc::RAND_1();
+            y = misc::RAND_1();
+            z = misc::RAND_1();
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
@@ -124,8 +123,8 @@ void BuildOrthonormalSystem(const Vector3D& v1, Vector3D& v2, Vector3D& v3)
 
 Vector3D HemisphereSampling(Vector3D m_normal)
 {
-    float r_1 = m_RND_2;
-    float r_2 = m_RND_2;
+    float r_1 = misc::RAND_2();
+    float r_2 = misc::RAND_2();
 
     float r = sqrt(1 - r_1 * r_2);
     float phi = 2 * M_PI * r_2;
@@ -409,7 +408,7 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
 void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 {
     // If depth >= MAX_DEPTH then Each recursive step will stop w/ a probability of 0.1
-    if ((depth >= MAX_DEPTH) & (m_RND_2 <= 0.1))
+    if ((depth >= MAX_DEPTH) & (misc::RAND_2() <= 0.1))
         return;
 
     Point3D start_pos = Point3D(in_pho->x, in_pho->y, in_pho->z);
@@ -513,7 +512,7 @@ Scene::RayType Scene::russian_roulette(Material *mat)   // [0, d] diffuse reflec
     float p_diff = diff_sum / (diff_sum + spec_sum) * p_refl;
     float p_spec = spec_sum / (diff_sum + spec_sum) * p_refl;
 
-    float r = m_RND_2;
+    float r = misc::RAND_2();
 
     if (r >= 0 && r < p_diff)
         return RayType::Diffuse;
@@ -567,6 +566,9 @@ Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
     // how much light from each
 
     kdres *kdr = kd_nearest3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
+
+    if (!kdr)
+        return Color(0,0,0);
 
     int num_photons = kd_res_size(kdr);
 
@@ -696,7 +698,7 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
     Ray new_ray = Ray(p_int, r);
     SurfacePoint new_end_pt;
 
-    trace_ray(new_ray, new_end_pt, &reflect_rgb, depth + 1);
+    //trace_ray(new_ray, new_end_pt, &reflect_rgb, depth + 1);
     // add reflection color
     col = col + reflect_rgb * hitObject->material->Kr;
     return true;

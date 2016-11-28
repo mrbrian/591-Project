@@ -8,6 +8,7 @@
 #include "polyroots.h"
 #include "camera.h"
 #include "kdtree/kdtree.h"
+#include "misc.h"
 
 using namespace std;
 

@@ -4,8 +4,7 @@
 #include "algebra.h"
 #include "material.h"
 #include "polyroots.h"
-
-extern double RAND_2();
+#include "misc.h"
 
 class SceneObject
 {
@@ -172,8 +171,8 @@ public:
         Vector3D right = topright - topleft;
         Vector3D down = botleft - topleft;
 
-        double h_pct = RAND_2();
-        double v_pct = RAND_2();
+        double h_pct = misc::RAND_2();
+        double v_pct = misc::RAND_2();
 
         Point3D result = (topleft + (h_pct * right) + (v_pct * down));
         return result;
