@@ -23,3 +23,8 @@ SOURCES += algebra.cpp \
     photon.cpp \
     tests.cpp \
     camera.cpp
+
+unix:!macx: LIBS += -L$$PWD/../kdtree/ -lkdtree
+
+INCLUDEPATH += $$PWD/../kdtree
+DEPENDPATH += $$PWD/../kdtree

@@ -547,24 +547,31 @@ Color *Scene::BRDF(Point3D x, Vector3D v, Vector3D pd)
     return color;
 }
 */
-Color radiance_estimate(kdtree *kd, SurfacePoint end_pt)
+Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
     // locate k nearest photons
     // how much light from each
 
     kdres *kdr = kd_nearest3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
-    photon **photon_set = (photon**)kdr; // array of references?
 
-    Vector3D delta = (*photon_set)[0].get_position() - end_pt.position;
-    double r = delta.length();  //distance to kth nearest photon
-    Color flux = Color(0,0,0);
+    int num_photons = kd_res_size(kdr);
 
-    int num_photons = 1;
+    photon *temp = (photon*)kd_res_item_data(kdr); //(photon**)kdr; // array of references?
+    double r = (temp->get_position() - end_pt.position).length();  //distance to kth nearest photon
 
     for (int i = 0; i < num_photons; i++)
     {
-        photon *ph = *photon_set;
+        photon *pho = (photon*)kd_res_item_data(kdr);
+        Vector3D delta = pho->get_position() - end_pt.position;
+        if (delta.length() > r);
+            r = delta.length();
+    }
+    Color flux = Color(0,0,0);
+
+    for (int i = 0; i < num_photons; i++)
+    {
+        photon *ph = (photon*)kd_res_item_data(kdr); //(photon**)kdr; // array of references?
         Vector3D pd = ph->get_direction();
         unsigned char *pw = ph->p;
 
@@ -583,8 +590,9 @@ Color radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 
         //flux += BRDF(ph->normal, v, pd) * pw;
 
-        photon_set++;
+        kd_res_next(kdr);
     }
+    kd_res_free(kdr);
     return flux / (2 * M_PI * pow(r,2));
 }
 
@@ -603,21 +611,22 @@ Color *Scene::Render(kdtree *kd)
 
             Ray ray = Ray(p, v);
 
-            Color &c = result[x + y * cam.imgWidth];
+            //Color &c = result[x + y * cam.imgWidth];
+            Color c;
             SurfacePoint end_pt;
-/*
-            if (!trace_ray(ray, &end_pt, 1))   // if ray hit nothing
+
+            if (!trace_ray(ray, &end_pt, &c, 1))   // if ray hit nothing
                 c = BG_COLOR;                       // use background color
             else
             {
                 // gather the photons around the end pt
                 c = radiance_estimate(kd, end_pt);
-            }*/
+            }
         }
     }
     return result;
 }
-/*
+
 bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
 {
     if (depth > MAX_DEPTH)  // stop recursing
@@ -626,8 +635,7 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
     double t_min = INFINITY;
     Vector3D n_min;
     SceneObject *hitObject = NULL;
-    Vector3D v = ray.direction;
-    v.normalize();
+    ray.direction.normalize();
 
     Color &col = *color;
     if (depth == 1)         // start ... with no colour
@@ -638,12 +646,12 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
         SceneObject *obj = (*it);
 
         Vector3D n;
-        double t = obj->intersect(o, v, &n);      // whats the n?
+        double t = obj->intersect(ray.origin, ray.direction, &n);      // whats the n?
 
         if (0 <= t && t < t_min)
         {
             t_min = t;
-            if (n.dot(v) >= 0)
+            if (n.dot(ray.direction) >= 0)
                 n = -n;
             n_min = n;
             hitObject = obj;
@@ -655,34 +663,32 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
         return false;
     }
 
-    Point3D p_int = o + t_min * v;      // calculate intersection point
+    Point3D p_int = ray.origin + t_min * ray.direction;      // calculate intersection point
 
     p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
 
     // found closest intersection
-    Point3D p = o + t_min * v;
+    Point3D p = ray.origin + t_min * ray.direction;
 
     Vector3D n = n_min;
-    Vector3D l = light->position - p;
-    l.normalize();
-    Vector3D r = -l + 2 * (l.dot(n)) * n;
 
     // add radiance estimate
-    //radiance_estimate(kd,);
+    radiance_estimate(kd, );
 
     Color reflect_rgb;     // reflection color;
 
     // calculate reflect vector
-    Vector3D r = v + (2 * n_min.dot(-v)) * n_min;
+    Vector3D r = ray.direction + (2 * n_min.dot(-ray.direction)) * n_min;
 
     Ray new_ray = Ray(p_int, r);
+    SurfacePoint new_end_pt;
 
-    trace_ray(new_ray, p_int, r, &reflect_rgb, depth + 1);
+    trace_ray(new_ray, new_end_pt, &reflect_rgb, depth + 1);
     // add reflection color
     col = col + reflect_rgb * hitObject->material->Kr;
     return true;
 }
-*/
+
 
 // cornell scene
 Scene *Scene::cornellBoxScene(int width, int height)

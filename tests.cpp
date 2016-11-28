@@ -323,7 +323,22 @@ void radiance()
 
     //data->flag = 666;
     //kd_res_item
-    s.Render(kd);
+
+    SurfacePoint end_pt = SurfacePoint(Point3D(0,0,0),
+                                       Vector3D(0,1,0),
+                                       Material(
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           1.0,
+                                           Color(1,1,1)
+                                           )
+                                        );
+    Color flux = s.radiance_estimate(kd, end_pt);
+    Color *img = s.Render(kd);
+
+    const char *filename = "radiance_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
 }
 
 tests::tests()
