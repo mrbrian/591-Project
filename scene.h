@@ -112,6 +112,7 @@ public:
     Point2D calc_image_coords(Point3D pt);
 
     // collide photon with the scene objects
+    Color *BRDF(SurfacePoint x, Vector3D view, Vector3D pd);
     void initialize_photons(int num_photons, vector<photon*> *out_photons);
     RayType russian_roulette(Material *mat);
     void emit_photons(int num_photons, vector<photon*> *photon_map);

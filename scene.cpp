@@ -546,26 +546,27 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
 // x = surfact point
 // pd = incident direction
 // v = reflected direction
-/*
-Color *Scene::BRDF(Point3D x, Vector3D v, Vector3D pd)
+
+Color *Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
 {
-    Color *color;
+    Vector3D ref_dir = pd + (2 * x.normal.dot(-pd)) * x.normal;
 
-    Color diff = pd.dot(norm) * Kd;
-    Color spec = pd.dot(v) * Ks;
+    double pd_dot_norm = std::max(0.0, pd.dot(x.normal));
+    double ref_dot_view = std::max(0.0, ref_dir.dot(view));
 
-    color = diff + spec;
+    Color diff = pd_dot_norm * x.material.Kd;
+    Color spec = ref_dot_view * x.material.Ks;
 
-    return color;
+    return new Color(diff + spec);
 }
-*/
+
 Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
     // locate k nearest photons
     // how much light from each
 
-    kdres *kdr = kd_nearest3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
+    kdres *kdr = kd_nearest3f(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
 
     if (!kdr)
         return Color(0,0,0);
@@ -586,24 +587,26 @@ Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
 
     for (int i = 0; i < num_photons; i++)
     {
-        photon *ph = (photon*)kd_res_item_data(kdr); //(photon**)kdr; // array of references?
+        photon *ph = (photon*)kd_res_item_data(kdr);
         Vector3D pd = ph->get_direction();
         unsigned char *pw = ph->p;
 
+        Vector3D eye_dir = ph->get_direction(); // eye direction
+/*
         Color diff;
         Color spec;
 
         Vector3D norm = end_pt.normal;
         Vector3D light_dir = ph->get_direction(); // incoming light
-        Vector3D eye_dir = ph->get_direction(); // eye direction
         Vector3D ref_dir = light_dir + (2 * norm.dot(-light_dir)) * norm;
 
         diff = light_dir.dot(end_pt.normal) * end_pt.material.Kd;
         spec = pow(ref_dir.dot(eye_dir), end_pt.material.p) * end_pt.material.Ks;
-
         flux = flux + diff + spec;
-
-        //flux += BRDF(ph->normal, v, pd) * pw;
+*/
+        Color *brdf = BRDF(end_pt, eye_dir, pd);
+        flux = flux + *brdf;// * pw;
+        delete (brdf);
 
         kd_res_next(kdr);
     }
@@ -637,6 +640,7 @@ Color *Scene::Render(kdtree *kd)
                 // gather the photons around the end pt
                 c = radiance_estimate(kd, end_pt);
             }
+            result[x + y * cam.imgWidth] = c;
         }
     }
     return result;

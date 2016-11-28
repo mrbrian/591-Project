@@ -30,9 +30,9 @@ void* make_kdtree(vector<photon*> *photon_map)
         photon *obj = (*it);
 
         //kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, 0);
-        assert(kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, 0) == 0);
+        assert(kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, obj) == 0);
     }
-
+    return kd;
 }
 
 void render_photons(Scene scene, vector<photon*> *photon_map, const char* outputStr)
@@ -66,12 +66,7 @@ void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
-
-    void *tree = make_kdtree(photons);
-
-    // create new image
-    std::vector<unsigned char> image;
-    image.resize(width * height * 4);
+    kdtree *tree = (kdtree*)make_kdtree(photons);
 
     Color *resultImg = scene.Render((kdtree*)tree);
 
