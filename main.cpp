@@ -32,7 +32,7 @@ void* make_kdtree(vector<photon*> *photon_map)
         //kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, 0);
         assert(kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, 0) == 0);
     }
-    return kd;
+
 }
 
 void render_photons(Scene scene, vector<photon*> *photon_map, const char* outputStr)
@@ -66,6 +66,7 @@ void render_photons(Scene scene, vector<photon*> *photon_map, const char* output
     if (error)
         printf("error %u: %s\n", error, lodepng_error_text(error));
 }
+
 
 void normal_render(Scene scene, const char* outputStr)
 {

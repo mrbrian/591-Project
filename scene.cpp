@@ -4,29 +4,6 @@
 #define MAX_DEPTH   5
 #define BG_COLOR    Color(0,0,0)
 
-// -----------------------------------------
-//    RANDOM NUMBER GENERATION
-// -----------------------------------------
-
-// Mersenne Twister 19937 generator
-// A Mersenne Twister pseudo-random generator of 32-bit numbers with a state size of 19937 bits.
-// http://www.cplusplus.com/reference/random/mt19937/
-
-std::mt19937 MersenneTwisterPRNG;
-
-// Uniform real distribution
-// Random number distribution that produces floating-point values according to a uniform distribution,
-// which is described by the following probability density function (...) - more details here:
-// http://www.cplusplus.com/reference/random/uniform_real_distribution/
-
-std::uniform_real_distribution<double> m_URD;
-
-// Hemisphere sampling (i.e., for diffuse reflection)
-// function "m_Vector HemisphereSampling(m_Vector m_normal)" below
-// calls both m_RND_1 and m_RND_2
-#define m_RND_1 (2.0*m_URD(MersenneTwisterPRNG)-1.0)    // [-1,1]
-#define m_RND_2 (m_URD(MersenneTwisterPRNG))        // [0,1]
-
 Light::Light(Point3D pos, Color a, Color d, Color s, double in_watts)
 {
     position = pos;
@@ -55,6 +32,42 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         while (dir.length2() > 1);
         photon *p = new photon;
         p->set_position(position);
+        dir.normalize();
+        p->set_direction(dir);
+        p->set_color(Id);       // only using the diffuse color..(?)
+
+        out_photons->push_back(p);
+        num_emit++;
+    }
+}
+
+LightObject::LightObject(Point3D pos, Color a, Color d, Color s, double in_watts, SceneObject *o)
+    : Light(pos, a, d, s, in_watts)
+{
+    obj = o;
+
+}
+
+void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
+{
+    int num_emit = 0;
+    while (num_emit < to_emit)
+    {
+        double x;
+        double y;
+        double z;
+        Vector3D dir;
+        do
+        {
+            x = m_RND_1;
+            y = m_RND_1;
+            z = m_RND_1;
+            dir = Vector3D(x, y, z);
+        }
+        while (dir.length2() > 1);
+        photon *p = new photon;
+        Point3D p_pos = obj->point_on_surface();
+        p->set_position(p_pos);
         dir.normalize();
         p->set_direction(dir);
         p->set_color(Id);       // only using the diffuse color..(?)
@@ -673,7 +686,7 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
     Vector3D n = n_min;
 
     // add radiance estimate
-    radiance_estimate(kd, );
+    //radiance_estimate(kd, );
 
     Color reflect_rgb;     // reflection color;
 
@@ -728,8 +741,8 @@ Scene *Scene::cornellBoxScene(int width, int height)
     Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
     Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
 
-    Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1);
-    scene.lights.push_back(light);
+    //Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1);
+    //scene.lights.push_back(light);
 
     // Ceiling
     Quad *q_1 = new Quad(
@@ -742,14 +755,14 @@ Scene *Scene::cornellBoxScene(int width, int height)
     scene.objects.push_back(q_1);
 
     // Ceiling light
-    /*Quad *light_q = new Quad(
+    Quad *light_q = new Quad(
         Point3D(0.653, 2.74, -8.274),
         Point3D(-0.653, 2.74, -8.274),
         Point3D(-0.653, 2.74, -7.224),
         Point3D(0.653, 2.74, -7.224),
         mat_red);
-    scene.objects.push_back(light_q);
-    */
+    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1, light_q);
+    scene.lights.push_back(l_obj);
 
     // Green wall on left
     Quad *q_2 = new Quad(
