@@ -467,6 +467,10 @@ void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, 
     photon *new_photon;
     Vector3D new_dir;
     Point3D new_pos;
+    if (i_clr->R() <= 0.01 &&
+        i_clr->G() <= 0.01 &&
+        i_clr->B() <= 0.01)
+        return;
 
     switch (ray_type)
     {
@@ -702,7 +706,7 @@ bool Scene::trace_ray(kdtree *kd, Ray ray, Color *color, int depth)
         reflect_rgb = Color(0,0,0);
 
     // add reflection color
-    col = col + brdf + reflect_rgb;
+    col = col + brdf + reflect_rgb * end_pt.material->Kr;
     return true;
 }
 

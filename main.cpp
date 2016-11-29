@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     scene = *Scene::cornellBoxScene(width, height);
 
     vector<photon*> photon_map;
-    scene.emit_photons(100000, &photon_map);
+    scene.emit_photons(100, &photon_map);
 
     normal_render(scene, "standard");
     render_photons(scene, &photon_map, "photons");
