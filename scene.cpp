@@ -547,17 +547,17 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
 // pd = incident direction
 // v = reflected direction
 
-Color *Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
+Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
 {
     Vector3D ref_dir = pd + (2 * x.normal.dot(-pd)) * x.normal;
 
-    double pd_dot_norm = std::max(0.0, pd.dot(x.normal));
-    double ref_dot_view = std::max(0.0, ref_dir.dot(view));
+    double pd_dot_norm = std::max(0.0, -pd.dot(x.normal));
+    double ref_dot_view = std::max(0.0, -ref_dir.dot(view));
 
-    Color diff = pd_dot_norm * x.material.Kd;
-    Color spec = ref_dot_view * x.material.Ks;
+    Color diff = pd_dot_norm * x.material->Kd;
+    Color spec = ref_dot_view * x.material->Ks;
 
-    return new Color(diff + spec);
+    return (diff + spec);
 }
 
 Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
@@ -567,21 +567,28 @@ Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
     // how much light from each
 
     kdres *kdr = kd_nearest3f(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
+    //kdres *kdr = kd_nearest_range3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2], 6);
 
     if (!kdr)
-        return Color(0,0,0);
+        return Color(-1,-1,-1);
 
     int num_photons = kd_res_size(kdr);
 
     photon *temp = (photon*)kd_res_item_data(kdr); //(photon**)kdr; // array of references?
-    double r = (temp->get_position() - end_pt.position).length();  //distance to kth nearest photon
+    double r_2 = (temp->get_position() - end_pt.position).length2();  //distance to kth nearest photon
 
     for (int i = 0; i < num_photons; i++)
     {
         photon *pho = (photon*)kd_res_item_data(kdr);
         Vector3D delta = pho->get_position() - end_pt.position;
-        if (delta.length() > r);
-            r = delta.length();
+        if (delta.length2() > r_2);
+            r_2 = delta.length2();
+
+        printf("%f %f %f\n",
+               pho->get_color()->R(),
+               pho->get_color()->G(),
+               pho->get_color()->B()
+               );
     }
     Color flux = Color(0,0,0);
 
@@ -592,26 +599,34 @@ Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
         unsigned char *pw = ph->p;
 
         Vector3D eye_dir = ph->get_direction(); // eye direction
-/*
-        Color diff;
-        Color spec;
 
-        Vector3D norm = end_pt.normal;
-        Vector3D light_dir = ph->get_direction(); // incoming light
-        Vector3D ref_dir = light_dir + (2 * norm.dot(-light_dir)) * norm;
-
-        diff = light_dir.dot(end_pt.normal) * end_pt.material.Kd;
-        spec = pow(ref_dir.dot(eye_dir), end_pt.material.p) * end_pt.material.Ks;
-        flux = flux + diff + spec;
-*/
-        Color *brdf = BRDF(end_pt, eye_dir, pd);
-        flux = flux + *brdf;// * pw;
-        delete (brdf);
+        Color brdf = BRDF(end_pt, eye_dir, pd);
+        flux = flux + brdf;// * pw;
 
         kd_res_next(kdr);
     }
     kd_res_free(kdr);
-    return flux / (2 * M_PI * pow(r,2));
+    return flux / (2 * M_PI * r_2);
+}
+
+Color Scene::Render(kdtree *kd, int x, int y)
+{
+    // iterate over the pixels & set colour values
+
+    // determine ray vector
+    Point3D p = imgPlane->ImageToWorldSpace(x, y, cam.imgWidth, cam.imgHeight);
+    Vector3D v = p - cam.position;
+    v.normalize();
+
+    Ray ray = Ray(p, v);
+
+    //Color &c = result[x + y * cam.imgWidth];
+    Color c;
+
+    if (!trace_ray(kd, ray, &c, 1))   // if ray hit nothing
+        c = BG_COLOR;                       // use background color
+
+    return c;
 }
 
 Color *Scene::Render(kdtree *kd)
@@ -622,31 +637,13 @@ Color *Scene::Render(kdtree *kd)
     {
         for (int y = 0; y < cam.imgHeight; y++)
         {
-            // determine ray vector
-            Point3D p = imgPlane->ImageToWorldSpace(x, y, cam.imgWidth, cam.imgHeight);
-            Vector3D v = p - cam.position;
-            v.normalize();
-
-            Ray ray = Ray(p, v);
-
-            //Color &c = result[x + y * cam.imgWidth];
-            Color c;
-            SurfacePoint end_pt;
-
-            if (!trace_ray(ray, &end_pt, &c, 1))   // if ray hit nothing
-                c = BG_COLOR;                       // use background color
-            else
-            {
-                // gather the photons around the end pt
-                c = radiance_estimate(kd, end_pt);
-            }
-            result[x + y * cam.imgWidth] = c;
+            result[x + y * cam.imgWidth] = Render(kd, x, y);
         }
     }
     return result;
 }
 
-bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
+bool Scene::trace_ray(kdtree *kd, Ray ray, Color *color, int depth)
 {
     if (depth > MAX_DEPTH)  // stop recursing
         return false;
@@ -692,19 +689,20 @@ bool Scene::trace_ray(Ray ray, SurfacePoint *end_pt, Color *color, int depth)
     Vector3D n = n_min;
 
     // add radiance estimate
-    //radiance_estimate(kd, );
-
-    Color reflect_rgb;     // reflection color;
+    SurfacePoint end_pt = SurfacePoint(p_int, n_min, hitObject->material);
+    Color brdf = radiance_estimate(kd, end_pt);
 
     // calculate reflect vector
     Vector3D r = ray.direction + (2 * n_min.dot(-ray.direction)) * n_min;
 
     Ray new_ray = Ray(p_int, r);
-    SurfacePoint new_end_pt;
+    Color reflect_rgb;
 
-    //trace_ray(new_ray, new_end_pt, &reflect_rgb, depth + 1);
+    if (!trace_ray(kd, new_ray, &reflect_rgb, depth + 1))   //reflect color
+        reflect_rgb = Color(0,0,0);
+
     // add reflection color
-    col = col + reflect_rgb * hitObject->material->Kr;
+    col = col + brdf + reflect_rgb;
     return true;
 }
 

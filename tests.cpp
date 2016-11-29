@@ -281,6 +281,9 @@ void camera_plane()
     }
 }
 
+#define DEF_WIDTH   250
+#define DEF_HEIGHT  250
+
 void radiance()
 {
     // setup scene
@@ -288,7 +291,7 @@ void radiance()
     // put in kd_tree
     // find nearest photon at some point
 
-    Scene *scene = Scene::cornellBoxScene(5, 5);
+    Scene *scene = Scene::cornellBoxScene(DEF_WIDTH, DEF_HEIGHT);
     Scene &s = *scene;
 
     kdtree *kd;
@@ -326,7 +329,7 @@ void radiance()
 
     SurfacePoint end_pt = SurfacePoint(Point3D(0,0,0),
                                        Vector3D(0,1,0),
-                                       Material(
+                                       new Material(
                                            Color(1,1,1),
                                            Color(1,1,1),
                                            Color(1,1,1),
@@ -334,7 +337,11 @@ void radiance()
                                            Color(1,1,1)
                                            )
                                         );
-    Color flux = s.radiance_estimate(kd, end_pt);
+    //Color flux = s.radiance_estimate(kd, end_pt);
+    //Color flux2 = s.radiance_estimate(kd, end_pt);
+    Color test = s.Render(kd, 11, 25);
+    return;
+
     Color *img = s.Render(kd);
 
     const char *filename = "radiance_test";
