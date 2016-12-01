@@ -29,11 +29,8 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
-        photon *p = new photon;
-        p->set_position(position);
         dir.normalize();
-        p->set_direction(dir);
-        p->set_color(Id);       // only using the diffuse color..(?)
+        photon *p = new photon(position, dir, Id);       // only using the diffuse color..(?)
 
         out_photons->push_back(p);
         num_emit++;
@@ -64,12 +61,9 @@ void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
-        photon *p = new photon;
         Point3D p_pos = obj->point_on_surface();
-        p->set_position(p_pos);
         dir.normalize();
-        p->set_direction(dir);
-        p->set_color(Id);       // only using the diffuse color..(?)
+        photon *p = new photon(p_pos, dir, Id);
 
         out_photons->push_back(p);
         num_emit++;
@@ -346,27 +340,27 @@ bool Scene::trace_ray(Point3D o, Vector3D v, Color *color, int depth)
 
 SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, double *t_min_ptr, Vector3D *n_min_ptr)
 {
-	SceneObject *hitObject = NULL;
-	double &t_min = *t_min_ptr;
-	Vector3D &n_min = *n_min_ptr;
+    SceneObject *hitObject = NULL;
+    double &t_min = *t_min_ptr;
+    Vector3D &n_min = *n_min_ptr;
 
-	for (std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
-	{
-		SceneObject *obj = (*it);
+    for (std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
+    {
+        SceneObject *obj = (*it);
 
-		Vector3D n;
-		double t = obj->intersect(o, v, &n);      // whats the n?
+        Vector3D n;
+        double t = obj->intersect(o, v, &n);      // whats the n?
 
-		if (0 <= t && t < t_min)
-		{
-			t_min = t;
-			if (n.dot(v) >= 0)
-				n = -n;
-			n_min = n;
-			hitObject = obj;
-		}
-	}
-	return hitObject;
+        if (0 <= t && t < t_min)
+        {
+            t_min = t;
+            if (n.dot(v) >= 0)
+                n = -n;
+            n_min = n;
+            hitObject = obj;
+        }
+    }
+    return hitObject;
 }
 
 bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Vector3D *_out_reflect, Vector3D *_out_refract, Color *_out_clr, Material *_out_mat)
@@ -378,15 +372,15 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     Color &out_clr = *_out_clr;
     Material &out_mat = *_out_mat;
 
-	double t_min = INFINITY;
-	Vector3D n_min;
-	SceneObject *hitObject = NULL;
+    double t_min = INFINITY;
+    Vector3D n_min;
+    SceneObject *hitObject = NULL;
     in_dir.normalize();
 
-	// find closest intersection point, the object
+    // find closest intersection point, the object
     hitObject = find_closest_intersection(this, in_pos, in_dir, &t_min, &n_min);
 
-	if (hitObject == NULL)              // check for no intersection
+    if (hitObject == NULL)              // check for no intersection
         return false;
 
     out_mat = *hitObject->material;
@@ -398,7 +392,7 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     out_reflect = in_dir + (2 * n_min.dot(-in_dir)) * n_min;
 
     out_clr = *in_clr;
-    // add diffuse color    
+    // add diffuse color
     //out_clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
     return true;
 }
@@ -439,10 +433,7 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
             );
 
     // store photon in photon list
-    photon *store_photon = new photon();
-    store_photon->set_position(i_point);
-    store_photon->set_direction(direction);
-    store_photon->set_color(i_clr);
+    photon *store_photon = new photon(i_point, direction, i_clr);
     out_list->push_back(store_photon);
 
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
@@ -493,11 +484,8 @@ void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, 
         new_dir = *i_refract;
         return;
     }
-    new_photon = new photon();
+    new_photon = new photon(new_pos, new_dir, *i_clr);
     new_photon->normal = *i_normal;
-    new_photon->set_position(new_pos);
-    new_photon->set_direction(new_dir);
-    new_photon->set_color(*i_clr);
 
     trace_photon(new_photon, depth + 1, out_list);
 }
@@ -564,54 +552,47 @@ Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
     return (diff + spec);
 }
 
+#define NUM_OF_COLLECT_PHOTONS 10
+
 Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
     // locate k nearest photons
     // how much light from each
-/*
-    kdres *kdr = kd_nearest3f(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
-    //kdres *kdr = kd_nearest_range3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2], 6);
 
-    if (!kdr)
+    const photon p = photon(end_pt.position, Vector3D(0,1,0), Color(0,0,0));
+    vector<photon> nearest = kd->getKNearest(p, NUM_OF_COLLECT_PHOTONS);
+
+    int num_photons = nearest.size();
+
+    if (num_photons == 0)
         return Color(-1,-1,-1);
 
-    int num_photons = kd_res_size(kdr);
-
-    photon *temp = (photon*)kd_res_item_data(kdr); //(photon**)kdr; // array of references?
-    double r_2 = (temp->get_position() - end_pt.position).length2();  //distance to kth nearest photon
-
-    for (int i = 0; i < num_photons; i++)
-    {
-        photon *pho = (photon*)kd_res_item_data(kdr);
-        Vector3D delta = pho->get_position() - end_pt.position;
-        if (delta.length2() > r_2);
-            r_2 = delta.length2();
-
-        printf("%f %f %f\n",
-               pho->get_color()->R(),
-               pho->get_color()->G(),
-               pho->get_color()->B()
-               );
-    }
+    double r_2 = 0;  //distance to kth nearest photon
     Color flux = Color(0,0,0);
 
-    for (int i = 0; i < num_photons; i++)
+    for ( std::vector<photon>::iterator it = nearest.begin(); it != nearest.end(); ++it)
     {
-        photon *ph = (photon*)kd_res_item_data(kdr);
-        Vector3D pd = ph->get_direction();
-        unsigned char *pw = ph->p;
+        photon pho = *it;
+        Vector3D delta = pho.get_position() - end_pt.position;
+        if (delta.length2() > r_2);
+            r_2 = delta.length2();
+/*
+        printf("%f %f %f\n",
+               pho.get_color()->R(),
+               pho.get_color()->G(),
+               pho.get_color()->B()
+               );*/
 
-        Vector3D eye_dir = ph->get_direction(); // eye direction
+        Vector3D pd = pho.get_direction();
+        unsigned char *pw = pho.p;
+
+        Vector3D eye_dir = pho.get_direction(); // eye direction
 
         Color brdf = BRDF(end_pt, eye_dir, pd);
         flux = flux + brdf;// * pw;
-
-        kd_res_next(kdr);
     }
-    kd_res_free(kdr);
     return flux / (2 * M_PI * r_2);
-    */
 }
 
 Color Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, int x, int y)

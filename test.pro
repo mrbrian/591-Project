@@ -27,10 +27,4 @@ SOURCES += algebra.cpp \
     tests.cpp \
     camera.cpp \
     misc.cpp \
-    kdtree/kdtest.cc \
     kdtree/timingstats.cc
-
-unix:!macx: LIBS += -L$$PWD/../kdtree/ -lkdtree
-
-INCLUDEPATH += $$PWD/../kdtree
-DEPENDPATH += $$PWD/../kdtree

@@ -20,18 +20,18 @@ double clamp(double min, double max, double in)
     return in;
 }
 
-void* make_kdtree(vector<photon*> *photon_map)
+KdTree<photon,L2Norm_2,GetDim,3,float>* make_kdtree(vector<photon*> *photon_map)
 {
-    void *kd;
-    kd = kd_create(3);
+    vector<photon> photon_map2;
 
-    for (vector<photon*>::iterator it = (*photon_map).begin(); it != (*photon_map).end(); ++it)
+    for (std::vector<photon*>::iterator it = photon_map->begin(); it != photon_map->end(); ++it)
     {
-        photon *obj = (*it);
-
-        //kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, 0);
-        assert(kd_insert3((kdtree*)kd, obj->x, obj->y, obj->z, obj) == 0);
+        photon *obj = *it;
+        photon_map2.push_back(*obj);
     }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float> *kd = new KdTree<photon,L2Norm_2,GetDim,3,float>(photon_map2);
+
     return kd;
 }
 
@@ -66,9 +66,9 @@ void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
-    kdtree *tree = (kdtree*)make_kdtree(photons);
+    KdTree<photon,L2Norm_2,GetDim,3,float> *tree = make_kdtree(photons);
 
-    Color *resultImg = scene.Render((kdtree*)tree);
+    Color *resultImg = scene.Render(tree);
 
     misc::save_color_image(outputStr, resultImg, width, height);
     delete (resultImg);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     scene = *Scene::cornellBoxScene(width, height);
 
     vector<photon*> photon_map;
-    scene.emit_photons(100, &photon_map);
+    scene.emit_photons(10000, &photon_map);
 
     normal_render(scene, "standard");
     render_photons(scene, &photon_map, "photons");

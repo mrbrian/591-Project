@@ -294,28 +294,33 @@ void radiance()
     Scene *scene = Scene::cornellBoxScene(DEF_WIDTH, DEF_HEIGHT);
     Scene &s = *scene;
 
-    KdTree<photon,L2Norm_2,GetDim,3,float> *kd;
     vector<photon*> photon_map;
-
     s.emit_photons(10, &photon_map);
-    /*
-    kd = KdTree<photon,L2Norm_2,GetDim,3,float>(&photon_map);
+
+    vector<photon> photon_map2;
 
     for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
     {
         photon *obj = *it;
-        kd_insert3f(kd, obj->x, obj->y, obj->z, obj);
+        photon_map2.push_back(*obj);
     }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float>  kd(photon_map2);
+
     //double b[3] = {-1,2.75,-5.6};
     //kdres *result = kd_nearest_range(kd, b, 20);
 
-    kdres *result = kd_nearest3f(kd, 0,0,0);
+    const photon p = photon(
+                Point3D(0,0,0),
+                Vector3D(0,1,0),
+                Color(1,1,1)
+                );
+
+    vector<photon> nearest = kd.getKNearest(p, 5);
     float x, y, z;
-    photon *data;
-    data = (photon*)kd_res_item_data(result);       // viewing photon data
-    kd_res_item3f(result, &x, &y, &z);
-    kd_res_free(result);
-*/
+    vector<photon>::iterator it = nearest.begin();
+
+    //if (data);
     /* pointer experiments
     Vector3D test1 = Vector3D(1,2,3);
     Vector3D *test2 = new Vector3D(6,6,6);
@@ -341,10 +346,10 @@ void radiance()
                                         );
     //Color flux = s.radiance_estimate(kd, end_pt);
     //Color flux2 = s.radiance_estimate(kd, end_pt);
-    Color test = s.Render(kd, 11, 25);
-    return;
+//    Color test = s.Render(kd, 11, 25);
+//    return;
 
-    Color *img = s.Render(kd);
+    Color *img = s.Render(&kd);
 
     const char *filename = "radiance_test";
     misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);

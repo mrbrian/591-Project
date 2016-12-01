@@ -13,8 +13,7 @@ HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
     photon.h \
     misc.h \
     camera.h \
-    kdtree/kdtree.h \
-    kdtree/mykdtree.h
+    kdtree/kdtree.h
 SOURCES += algebra.cpp \
            main.cpp \
            material.cpp \
@@ -23,10 +22,4 @@ SOURCES += algebra.cpp \
            lodepng/lodepng.cpp \
     photon.cpp \
     camera.cpp \
-    misc.cpp \
-    mykdtree.cpp
-
-unix:!macx: LIBS += -L$$PWD/../kdtree/ -lkdtree
-
-INCLUDEPATH += $$PWD/../kdtree
-DEPENDPATH += $$PWD/../kdtree
+    misc.cpp

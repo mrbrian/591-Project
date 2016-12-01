@@ -14,6 +14,14 @@ struct photon {
     Vector3D normal;            // surface normal
     short flag;                 // flag used in kdtree
 
+    photon(){}
+
+    photon(Point3D p, Vector3D d, Color c){
+        set_position(p);
+        set_direction(d);
+        set_color(c);
+    }
+
     void set_position(Point3D p);
     void set_direction(Vector3D dir);
     void set_color(Color dir);
