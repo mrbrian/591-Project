@@ -1,129 +1,117 @@
-/*
-This file is part of ``kdtree'', a library for working with kd-trees.
-Copyright (C) 2007-2011 John Tsiombikas <nuclear@member.fsf.org>
+//applying doxygen style commenting...
+/** @file kdtree.h
+ *  \brief Contains a kd-tree data structure to allow fast searches.
+ *   
+ *  kd-tree template written by Brian Budge 11/09/2003 \<p>
+ *  search code adapted from Per Christensen, SIGGRAPH coursenotes 2002
+ *
+ *  To Do:\<p>
+ *  2) Make build iterative\<p>
+ *  3) Allow different build policies such as alternating dim, high variance dim,
+ *  greatest difference dim\<p>
+ *  5) Allow epsilon error?  see ANN\<p>
+ *  6) Decide design decisions to make this easily applicable to anyone's
+ *  kd-tree needs\<p>
+ *  8) Allow incremental build, or just static build?\<p>
+ */
+#ifndef KDTREE_H
+#define KDTREE_H
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+#include <algorithm>
+#include <vector>
+#include <utility>
+#include <iostream>
+#include <functional>
+#include <cmath>
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-3. The name of the author may not be used to endorse or promote products
-   derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
-EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
-#ifndef _KDTREE_H_
-#define _KDTREE_H_
-
-#ifdef __cplusplus
-extern "C" {
+#ifndef INFINITY
+#define INFINITY 1.0 / 0.0
 #endif
 
-struct kdtree;
-struct kdres;
-
-
-/* create a kd-tree for "k"-dimensional data */
-struct kdtree *kd_create(int k);
-
-/* free the struct kdtree */
-void kd_free(struct kdtree *tree);
-
-/* remove all the elements from the tree */
-void kd_clear(struct kdtree *tree);
-
-/* if called with non-null 2nd argument, the function provided
- * will be called on data pointers (see kd_insert) when nodes
- * are to be removed from the tree.
+#ifndef MISCMATH_H
+/** fast log base 2 template for real values
+ *  should go in some other file later
  */
-void kd_data_destructor(struct kdtree *tree, void (*destr)(void*));
+template<typename real>
+real log2(real val){
+   const real m_lg_2 = 1.0 / std::log(2.0);
+   return std::log(val) * m_lg_2;
+}
 
-/* insert a node, specifying its position, and optional data */
-int kd_insert(struct kdtree *tree, const double *pos, void *data);
-int kd_insertf(struct kdtree *tree, const float *pos, void *data);
-int kd_insert3(struct kdtree *tree, double x, double y, double z, void *data);
-int kd_insert3f(struct kdtree *tree, float x, float y, float z, void *data);
-
-/* Find the nearest node from a given point.
- *
- * This function returns a pointer to a result set with at most one element.
+/** \fn log2I
+ *  \brief fast log base 2 for unsigned values
  */
-struct kdres *kd_nearest(struct kdtree *tree, const double *pos);
-struct kdres *kd_nearestf(struct kdtree *tree, const float *pos);
-struct kdres *kd_nearest3(struct kdtree *tree, double x, double y, double z);
-struct kdres *kd_nearest3f(struct kdtree *tree, float x, float y, float z);
-
-/* Find the N nearest nodes from a given point.
- *
- * This function returns a pointer to a result set, with at most N elements,
- * which can be manipulated with the kd_res_* functions.
- * The returned pointer can be null as an indication of an error. Otherwise
- * a valid result set is always returned which may contain 0 or more elements.
- * The result set must be deallocated with kd_res_free after use.
- */
-/*
-struct kdres *kd_nearest_n(struct kdtree *tree, const double *pos, int num);
-struct kdres *kd_nearest_nf(struct kdtree *tree, const float *pos, int num);
-struct kdres *kd_nearest_n3(struct kdtree *tree, double x, double y, double z);
-struct kdres *kd_nearest_n3f(struct kdtree *tree, float x, float y, float z);
-*/
-
-/* Find any nearest nodes from a given point within a range.
- *
- * This function returns a pointer to a result set, which can be manipulated
- * by the kd_res_* functions.
- * The returned pointer can be null as an indication of an error. Otherwise
- * a valid result set is always returned which may contain 0 or more elements.
- * The result set must be deallocated with kd_res_free after use.
- */
-struct kdres *kd_nearest_range(struct kdtree *tree, const double *pos, double range);
-struct kdres *kd_nearest_rangef(struct kdtree *tree, const float *pos, float range);
-struct kdres *kd_nearest_range3(struct kdtree *tree, double x, double y, double z, double range);
-struct kdres *kd_nearest_range3f(struct kdtree *tree, float x, float y, float z, float range);
-
-/* frees a result set returned by kd_nearest_range() */
-void kd_res_free(struct kdres *set);
-
-/* returns the size of the result set (in elements) */
-int kd_res_size(struct kdres *set);
-
-/* rewinds the result set iterator */
-void kd_res_rewind(struct kdres *set);
-
-/* returns non-zero if the set iterator reached the end after the last element */
-int kd_res_end(struct kdres *set);
-
-/* advances the result set iterator, returns non-zero on success, zero if
- * there are no more elements in the result set.
- */
-int kd_res_next(struct kdres *set);
-
-/* returns the data pointer (can be null) of the current result set item
- * and optionally sets its position to the pointers(s) if not null.
- */
-void *kd_res_item(struct kdres *set, double *pos);
-void *kd_res_itemf(struct kdres *set, float *pos);
-void *kd_res_item3(struct kdres *set, double *x, double *y, double *z);
-void *kd_res_item3f(struct kdres *set, float *x, float *y, float *z);
-
-/* equivalent to kd_res_item(set, 0) */
-void *kd_res_item_data(struct kdres *set);
-
-
-#ifdef __cplusplus
+inline unsigned log2I(unsigned val){
+   unsigned i = 0;
+   val >>= 1;
+   for(; val > 0; ++i,val >>= 1);
+   return i;
 }
 #endif
 
-#endif	/* _KDTREE_H_ */
+/** \typedef byte
+ *  \brief Call unsigned char byte instead
+ */
+typedef unsigned char byte;
+
+/** \class KdTree
+ *  \brief A very fast/adaptable kd-tree template implementation
+ */
+template <class position_t,
+	  class metric,
+	  class dimget,
+	  unsigned dim = 3,
+	  typename real = float>
+class KdTree{
+private:
+   /** \struct KdSplit
+    *  kd-tree split structure used to keep
+    *  track of splitting plane information
+    */
+   struct KdSplit{
+      /// \var pointer to one position_t
+      position_t *data;
+      /// \var 
+      byte split;
+   };
+
+private:
+   /// \var the actual data we are storing 
+   position_t *m_data; 
+
+   /// \var the splits 
+   KdSplit *m_splits; 
+   
+   /// \var intermediate data
+   position_t **m_sortMe;
+   
+   /// \var the size of the data
+   unsigned m_size;
+
+private:
+   /// \fn helper function to build the tree
+   void createTree(position_t **array,unsigned size,
+		   unsigned splitIndex,unsigned depth);
+
+   byte bestSplitDim(position_t **array,unsigned size);
+   
+public:
+   /// \fn constructor
+   KdTree(const std::vector<position_t> &data);
+
+   /// \fn returns the nearest position_t to ref according to the specified metric
+   position_t getNearest(const position_t &ref);
+
+   /// \fn returns k nearest position_t's to ref according to the specified metric
+   std::vector<position_t> getKNearest(const position_t &ref,unsigned k);
+
+   /// \fn returns all position_t's within radius (according to metric) of ref
+   std::vector<position_t> getFixedRadius(const position_t &ref, real radius);
+
+   /// \fn destructor
+   ~KdTree(); 
+};
+
+#include "kdtree.hxx"
+
+#endif//KDTREE_H

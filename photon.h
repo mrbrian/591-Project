@@ -20,6 +20,13 @@ struct photon {
     Color *get_color();
     Point3D get_position();
     Vector3D get_direction();
+
+    float dist2(const photon &n)const{
+       float _x = n.x - x;
+       float _y = n.y - y;
+       float _z = n.z - z;
+       return _x*_x + _y*_y + _z*_z;
+    }
 };
 
 #endif //PHOTON

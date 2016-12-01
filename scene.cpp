@@ -564,12 +564,12 @@ Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
     return (diff + spec);
 }
 
-Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
+Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
     // locate k nearest photons
     // how much light from each
-
+/*
     kdres *kdr = kd_nearest3f(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2]);
     //kdres *kdr = kd_nearest_range3(kd, end_pt.position[0], end_pt.position[1], end_pt.position[2], 6);
 
@@ -611,9 +611,10 @@ Color Scene::radiance_estimate(kdtree *kd, SurfacePoint end_pt)
     }
     kd_res_free(kdr);
     return flux / (2 * M_PI * r_2);
+    */
 }
 
-Color Scene::Render(kdtree *kd, int x, int y)
+Color Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, int x, int y)
 {
     // iterate over the pixels & set colour values
 
@@ -633,7 +634,7 @@ Color Scene::Render(kdtree *kd, int x, int y)
     return c;
 }
 
-Color *Scene::Render(kdtree *kd)
+Color *Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd)
 {
     Color * result = new Color[cam.imgWidth * cam.imgHeight];
     // iterate over the pixels & set colour values
@@ -647,7 +648,7 @@ Color *Scene::Render(kdtree *kd)
     return result;
 }
 
-bool Scene::trace_ray(kdtree *kd, Ray ray, Color *color, int depth)
+bool Scene::trace_ray(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Ray ray, Color *color, int depth)
 {
     if (depth > MAX_DEPTH)  // stop recursing
         return false;

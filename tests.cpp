@@ -294,11 +294,13 @@ void radiance()
     Scene *scene = Scene::cornellBoxScene(DEF_WIDTH, DEF_HEIGHT);
     Scene &s = *scene;
 
-    kdtree *kd;
+    KdTree<photon,L2Norm_2,GetDim,3,float> *kd;
     vector<photon*> photon_map;
 
     s.emit_photons(10, &photon_map);
-    kd = kd_create(3);
+    /*
+    kd = KdTree<photon,L2Norm_2,GetDim,3,float>(&photon_map);
+
     for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
     {
         photon *obj = *it;
@@ -313,7 +315,7 @@ void radiance()
     data = (photon*)kd_res_item_data(result);       // viewing photon data
     kd_res_item3f(result, &x, &y, &z);
     kd_res_free(result);
-
+*/
     /* pointer experiments
     Vector3D test1 = Vector3D(1,2,3);
     Vector3D *test2 = new Vector3D(6,6,6);
