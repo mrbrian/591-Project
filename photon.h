@@ -9,20 +9,21 @@ using namespace std;
 
 struct photon {
     float x, y, z;              // position
-    unsigned char p[4];         // power packed as 4 chars
+    Color color;         // power packed as 4 chars
+    double power;
     unsigned char phi, theta;   // compressed incident direction
-    Vector3D normal;            // surface normal
     short flag;                 // flag used in kdtree
 
     photon(){}
 
-    photon(Point3D p, Vector3D d, Color c){
+    photon(Point3D p, Vector3D d, Color c, double energy){
         set_position(p);
         set_direction(d);
         set_color(c);
+        power = energy;
     }
 
-    void set_position(Point3D p);
+    void set_position(Point3D power);
     void set_direction(Vector3D dir);
     void set_color(Color dir);
     Color *get_color();

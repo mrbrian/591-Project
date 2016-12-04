@@ -313,7 +313,8 @@ void radiance()
     const photon p = photon(
                 Point3D(0,0,0),
                 Vector3D(0,1,0),
-                Color(1,1,1)
+                Color(1,1,1),
+                0
                 );
 
     vector<photon> nearest = kd.getKNearest(p, 2);
@@ -346,9 +347,11 @@ void radiance()
                                         );
     //Color flux = s.radiance_estimate(kd, end_pt);
     //Color flux2 = s.radiance_estimate(kd, end_pt);
-    Color test = s.Render(&kd, 11, 25);
-    return;
-
+    Color test0 = s.Render(&kd, 132, 116);
+    printf("test0 - %f %f %f\n", test0.R(), test0.G(), test0.B());
+    Color test1 = s.Render(&kd, 132, 117);
+    printf("test1 - %f %f %f\n", test1.R(), test1.G(), test1.B());
+	return;
     Color *img = s.Render(&kd);
 
     const char *filename = "radiance_test";
