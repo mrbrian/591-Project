@@ -12,7 +12,7 @@ Light::Light(Point3D pos, Color a, Color d, Color s, double in_watts)
     watts = in_watts;
 }
 
-void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
+void Light::emit_photons(int to_emit, float energy, vector<photon*> *out_photons)
 {
     int num_emit = 0;
     while (num_emit < to_emit)
@@ -30,7 +30,7 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         }
         while (dir.length2() > 1);
         dir.normalize();
-        photon *p = new photon(position, dir, Id);       // only using the diffuse color..(?)
+        photon *p = new photon(position, dir, Id * energy);       // only using the diffuse color..(?)
 
         out_photons->push_back(p);
         num_emit++;
@@ -44,26 +44,17 @@ LightObject::LightObject(Point3D pos, Color a, Color d, Color s, double in_watts
 
 }
 
-void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
+void LightObject::emit_photons(int to_emit, float energy, vector<photon*> *out_photons)
 {
     int num_emit = 0;
     while (num_emit < to_emit)
     {
-        double x;
-        double y;
-        double z;
-        Vector3D dir;
-        do
-        {
-            x = misc::RAND_1();
-            y = misc::RAND_1();
-            z = misc::RAND_1();
-            dir = Vector3D(x, y, z);
-        }
-        while (dir.length2() > 1);
-        Point3D p_pos = obj->point_on_surface();
-        dir.normalize();
-        photon *p = new photon(p_pos, dir, Id);
+        Vector3D norm;
+        Point3D p_pos;
+        obj->point_on_surface(p_pos, norm);
+        norm.normalize();
+        Vector3D dir = HemisphereSampling(norm);
+        photon *p = new photon(p_pos, dir, Id * energy);
 
         out_photons->push_back(p);
         num_emit++;
@@ -231,6 +222,7 @@ Color *Scene::Render(vector<photon*> *photon_map)
             continue;
         Color &pixel = result[x + y * cam.imgWidth];
         pixel = *(p->get_color());
+        pixel = Color(1,1,1);
     }
 
     return result;
@@ -530,7 +522,7 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
     {
         Light *obj = (*it);
         int num_to_emit = (int)(obj->watts / energy_per_photon);
-        obj->emit_photons(num_to_emit, out_photons);
+        obj->emit_photons(num_to_emit, energy_per_photon, out_photons);
     }
 }
 
@@ -577,17 +569,17 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
         Vector3D delta = pho.get_position() - end_pt.position;
         if (delta.length2() > r_2);
             r_2 = delta.length2();
-/*
+
         printf("%f %f %f\n",
                pho.get_color()->R(),
                pho.get_color()->G(),
                pho.get_color()->B()
-               );*/
+               );
 
         Vector3D pd = pho.get_direction();
         unsigned char *pw = pho.p;
 
-        Vector3D eye_dir = pho.get_direction(); // eye direction
+        Vector3D eye_dir = pho.get_direction() - cam.position; // eye direction
 
         Color brdf = BRDF(end_pt, eye_dir, pd);
         flux = flux + brdf;// * pw;
@@ -598,16 +590,13 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
 Color Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, int x, int y)
 {
     // iterate over the pixels & set colour values
-
     // determine ray vector
     Point3D p = imgPlane->ImageToWorldSpace(x, y, cam.imgWidth, cam.imgHeight);
     Vector3D v = p - cam.position;
     v.normalize();
 
-    Ray ray = Ray(p, v);
-
-    //Color &c = result[x + y * cam.imgWidth];
     Color c;
+    Ray ray = Ray(p, v);
 
     if (!trace_ray(kd, ray, &c, 1))   // if ray hit nothing
         c = BG_COLOR;                       // use background color

@@ -76,7 +76,7 @@ public:
     double watts;
 
     Light(Point3D pos, Color a, Color d, Color s, double in_watts);
-    virtual void emit_photons(int to_emit, vector<photon*> *out_photons);
+    virtual void emit_photons(int to_emit, float energy, vector<photon*> *out_photons);
 
     virtual void Transform(Matrix4x4 m)
     {
@@ -90,7 +90,7 @@ public:
     SceneObject *obj;
 
     LightObject(Point3D pos, Color a, Color d, Color s, double in_watts, SceneObject *obj);
-    void emit_photons(int to_emit, vector<photon*> *out_photons) override;
+    void emit_photons(int to_emit, float energy, vector<photon*> *out_photons) override;
 };
 
 class ImagePlane
@@ -160,4 +160,8 @@ public:
     }
 };
 
+void BuildOrthonormalSystem(const Vector3D& v1, Vector3D& v2, Vector3D& v3);
+Vector3D HemisphereSampling(Vector3D m_normal);
+
 #endif //SCENE
+

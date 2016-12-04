@@ -295,7 +295,7 @@ void radiance()
     Scene &s = *scene;
 
     vector<photon*> photon_map;
-    s.emit_photons(10, &photon_map);
+    s.emit_photons(100, &photon_map);
 
     vector<photon> photon_map2;
 
@@ -316,7 +316,7 @@ void radiance()
                 Color(1,1,1)
                 );
 
-    vector<photon> nearest = kd.getKNearest(p, 5);
+    vector<photon> nearest = kd.getKNearest(p, 2);
     float x, y, z;
     vector<photon>::iterator it = nearest.begin();
 
@@ -346,8 +346,8 @@ void radiance()
                                         );
     //Color flux = s.radiance_estimate(kd, end_pt);
     //Color flux2 = s.radiance_estimate(kd, end_pt);
-//    Color test = s.Render(kd, 11, 25);
-//    return;
+    Color test = s.Render(&kd, 11, 25);
+    return;
 
     Color *img = s.Render(&kd);
 
