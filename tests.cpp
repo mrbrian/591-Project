@@ -358,13 +358,78 @@ void radiance()
     misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
 }
 
+void render_square()
+{
+    Scene *scene = Scene::planeScene(DEF_WIDTH, DEF_HEIGHT);
+    Scene &s = *scene;
+
+    vector<photon*> photon_map;
+    Point3D floor_top_left = Point3D(-2.75, -2.75, -10.5);
+    int w = 1;
+    int h = 1;
+
+    for (int i = 0; i < 25; i++)
+    {
+        Point3D offs = Point3D(i % 5 * w, 0, i / 5 * h);
+        photon *p = new photon(floor_top_left + offs, Vector3D(0,-1,0), Color(1,1,1), 0.25);
+        photon_map.push_back(p);
+    }
+
+    vector<photon> photon_map2;
+
+    for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
+    {
+        photon *obj = *it;
+        photon_map2.push_back(*obj);
+    }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float>  kd(photon_map2);
+
+    const photon p = photon(
+                Point3D(0,0,0),
+                Vector3D(0,1,0),
+                Color(1,1,1),
+                0
+                );
+
+    vector<photon> nearest = kd.getKNearest(p, 2);
+    float x, y, z;
+    vector<photon>::iterator it = nearest.begin();
+
+    SurfacePoint end_pt = SurfacePoint(Point3D(0,0,0),
+                                       Vector3D(0,1,0),
+                                       new Material(
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           1.0,
+                                           Color(1,1,1)
+                                           )
+                                        );
+
+    Color test0 = s.Render(&kd, 107, 191);
+    printf("test0 - %f %f %f\n", test0.R(), test0.G(), test0.B());
+    Color test1 = s.Render(&kd, 108, 191);
+    printf("test1 - %f %f %f\n", test1.R(), test1.G(), test1.B());
+    //return;
+    Color *img = s.Render(&kd);
+    const char *filename = "radiance_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
+
+    img = s.Render(&photon_map);
+
+    filename = "photon_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
+}
+
 tests::tests()
 {
     /*sphericalCoord_1();
     proj_point();
     proj_point2();
     camera_plane();*/
-    radiance();
+    //radiance();
+    render_square();
 }
 
 int main(int argc, char *argv[])

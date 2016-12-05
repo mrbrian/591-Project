@@ -123,6 +123,7 @@ public:
     std::vector<SceneObject*> objects;
     std::vector<Light*> lights;
 
+    static Scene *planeScene(int width, int height);
     static Scene *cornellBoxScene(int width, int height);
 
     Color *Render();
