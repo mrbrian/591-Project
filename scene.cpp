@@ -1,6 +1,14 @@
 #include "scene.h"
 
-#define MAX_DEPTH   5
+#ifdef DEBUG
+#define debug(fmt, ...)  do { \
+  if (debugging_enabled) { printf(fmt, ##__VA_ARGS__); } \
+} while (0)
+#else
+#define debug(fmt, ...)
+#endif
+
+#define MAX_DEPTH   10
 #define BG_COLOR    Color(1,0,0)
 #define NORM_EPSILON     0.001
 
@@ -436,7 +444,7 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 
     if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, &i_mat))
     {
-        printf("miss %d: %f %f %f - %f %f %f\n", depth, start_pos[0], start_pos[1], start_pos[2], direction[0], direction[1], direction[2]);
+        debug("miss %d: %f %f %f - %f %f %f\n", depth, start_pos[0], start_pos[1], start_pos[2], direction[0], direction[1], direction[2]);
         return;
     }
 
@@ -445,12 +453,12 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
     if (ray_type == RayType::Diffuse)
         i_clr = Color(i_clr.R() * i_mat.Kd.R(), i_clr.G() * i_mat.Kd.G(), i_clr.B() * i_mat.Kd.B());
 
-    printf("%f %f %f\n",
+    debug("%f %f %f\n",
            i_normal.get_x(),
            i_normal.get_y(),
            i_normal.get_z()
         );
-    printf("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
+    debug("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
             direction[0], direction[1], direction[2],
             i_clr.R(), i_clr.G(), i_clr.B()
             );
@@ -599,7 +607,7 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
     double r_2 = 0;  //distance to kth nearest photon
     Color flux = Color(0,0,0);
 
-    printf("%f %f %f - %f %f %f\n",
+    debug("%f %f %f - %f %f %f\n",
            end_pt.normal.get_x(),
            end_pt.normal.get_y(),
            end_pt.normal.get_z(),
@@ -614,7 +622,7 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
         if (delta.length2() > r_2)
             r_2 = delta.length2();
 
-        printf("%f %f %f %f - %f %f %f - %f %f %f \n",
+        debug("%f %f %f %f - %f %f %f - %f %f %f \n",
                pho.get_color()->R(),
                pho.get_color()->G(),
                pho.get_color()->B(),
@@ -637,8 +645,8 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
         //flux = flux + brdf * pho.color;
     }
 
-    printf("radius2 %f\n", r_2);
-    flux = flux / (2 * M_PI * r_2);
+    debug("radius2 %f\n", r_2);
+    flux = flux / (M_PI * r_2);
     return flux;// / NUM_OF_COLLECT_PHOTONS;
 }
 
@@ -677,7 +685,7 @@ Color *Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd)
 
 bool Scene::trace_ray(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Ray ray, Color *color, int depth)
 {
-    printf("trace_ray depth %d\n", depth);
+    debug("trace_ray depth %d\n", depth);
     if (depth > MAX_DEPTH)  // stop recursing
         return false;
 
@@ -741,7 +749,7 @@ bool Scene::trace_ray(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Ray ray, Color
 
 bool Scene::trace_ray_lights(Point3D o, Vector3D v, Color *color, int depth)
 {
-    printf("trace_ray_lights depth %d\n", depth);
+    debug("trace_ray_lights depth %d\n", depth);
 
     double t_min = INFINITY;
     Vector3D n_min;
@@ -804,23 +812,20 @@ Scene *Scene::cornellBoxScene(int width, int height)
     scene.imgPlane = cam.calc_img_plane();
     for (int y = 0; y < 4; y++)
     {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+        debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
     }
 
     scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
     for (int y = 0; y < 4; y++)
     {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+        debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
     }
 
-    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1000, Color(0, 0, 0));
-    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 100, Color(0, 0, 0));
+    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
     Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
     Material *mat_light = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
     Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
-
-    //Light *light = new Light(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1);
-    //scene.lights.push_back(light);
 
     // Ceiling
     Quad *q_1 = new Quad(
@@ -840,7 +845,7 @@ Scene *Scene::cornellBoxScene(int width, int height)
         Point3D(0.653, 2.74, -7.224),
         mat_light);
 
-    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 100, light_q);
+    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 125, light_q);
     scene.lights.push_back(l_obj);
 
     // Green wall on left

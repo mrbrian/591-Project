@@ -3,6 +3,14 @@
 std::mt19937 MersenneTwisterPRNG;
 std::uniform_real_distribution<double> m_URD;
 
+#define DEBUG 0
+
+void misc::debug(const char *s)
+{
+    if (DEBUG)
+        printf(s);
+}
+
 double misc::RAND_1()
 {
     return (2.0 * m_URD(MersenneTwisterPRNG) - 1.0);    // [-1,1]
