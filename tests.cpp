@@ -281,12 +281,155 @@ void camera_plane()
     }
 }
 
+#define DEF_WIDTH   250
+#define DEF_HEIGHT  250
+
+void radiance()
+{
+    // setup scene
+    // shoot photons
+    // put in kd_tree
+    // find nearest photon at some point
+
+    Scene *scene = Scene::cornellBoxScene(DEF_WIDTH, DEF_HEIGHT);
+    Scene &s = *scene;
+
+    vector<photon*> photon_map;
+    s.emit_photons(100, &photon_map);
+
+    vector<photon> photon_map2;
+
+    for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
+    {
+        photon *obj = *it;
+        photon_map2.push_back(*obj);
+    }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float>  kd(photon_map2);
+
+    //double b[3] = {-1,2.75,-5.6};
+    //kdres *result = kd_nearest_range(kd, b, 20);
+
+    const photon p = photon(
+                Point3D(0,0,0),
+                Vector3D(0,1,0),
+                Color(1,1,1),
+                0
+                );
+
+    vector<photon> nearest = kd.getKNearest(p, 2);
+    float x, y, z;
+    vector<photon>::iterator it = nearest.begin();
+
+    //if (data);
+    /* pointer experiments
+    Vector3D test1 = Vector3D(1,2,3);
+    Vector3D *test2 = new Vector3D(6,6,6);
+
+    test1 = *test2;
+    test1[0] = 555;
+    delete (test2);
+    test2 = &test1;
+    test1[0] = 115;*/
+
+    //data->flag = 666;
+    //kd_res_item
+
+    SurfacePoint end_pt = SurfacePoint(Point3D(0,0,0),
+                                       Vector3D(0,1,0),
+                                       new Material(
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           1.0,
+                                           Color(1,1,1)
+                                           )
+                                        );
+    //Color flux = s.radiance_estimate(kd, end_pt);
+    //Color flux2 = s.radiance_estimate(kd, end_pt);
+    Color test0 = s.Render(&kd, 132, 116);
+    printf("test0 - %f %f %f\n", test0.R(), test0.G(), test0.B());
+    Color test1 = s.Render(&kd, 132, 117);
+    printf("test1 - %f %f %f\n", test1.R(), test1.G(), test1.B());
+	return;
+    Color *img = s.Render(&kd);
+
+    const char *filename = "radiance_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
+}
+
+void render_square()
+{
+    Scene *scene = Scene::planeScene(DEF_WIDTH, DEF_HEIGHT);
+    Scene &s = *scene;
+
+    vector<photon*> photon_map;
+    Point3D floor_top_left = Point3D(-2.75, -2.75, -10.5);
+    int w = 1;
+    int h = 1;
+
+    for (int i = 0; i < 25; i++)
+    {
+        Point3D offs = Point3D(i % 5 * w, 0, i / 5 * h);
+        photon *p = new photon(floor_top_left + offs, Vector3D(0,-1,0), Color(1,1,1), 0.25);
+        photon_map.push_back(p);
+    }
+
+    vector<photon> photon_map2;
+
+    for (std::vector<photon*>::iterator it = photon_map.begin(); it != photon_map.end(); ++it)
+    {
+        photon *obj = *it;
+        photon_map2.push_back(*obj);
+    }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float>  kd(photon_map2);
+
+    const photon p = photon(
+                Point3D(0,0,0),
+                Vector3D(0,1,0),
+                Color(1,1,1),
+                0
+                );
+
+    vector<photon> nearest = kd.getKNearest(p, 2);
+    float x, y, z;
+    vector<photon>::iterator it = nearest.begin();
+
+    SurfacePoint end_pt = SurfacePoint(Point3D(0,0,0),
+                                       Vector3D(0,1,0),
+                                       new Material(
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           Color(1,1,1),
+                                           1.0,
+                                           Color(1,1,1)
+                                           )
+                                        );
+
+    Color test0 = s.Render(&kd, 107, 191);
+    printf("test0 - %f %f %f\n", test0.R(), test0.G(), test0.B());
+    Color test1 = s.Render(&kd, 108, 191);
+    printf("test1 - %f %f %f\n", test1.R(), test1.G(), test1.B());
+    //return;
+    Color *img = s.Render(&kd);
+    const char *filename = "radiance_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
+
+    img = s.Render(&photon_map);
+
+    filename = "photon_test";
+    misc::save_color_image(filename, img, s.cam.imgWidth, s.cam.imgHeight);
+}
+
 tests::tests()
 {
-    sphericalCoord_1();
+    /*sphericalCoord_1();
     proj_point();
     proj_point2();
-    camera_plane();
+    camera_plane();*/
+    //radiance();
+    render_square();
 }
 
 int main(int argc, char *argv[])

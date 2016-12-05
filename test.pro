@@ -13,7 +13,11 @@ HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
     photon.h \
     misc.h \
     tests.h \
-    camera.h
+    camera.h \
+    kdtree/kdtree.h \
+    kdtree/kdtree.hxx \
+    kdtree/timingstats.h \
+    kdtree/mykdtree.h
 SOURCES += algebra.cpp \
            material.cpp \
            polyroots.cpp \
@@ -21,4 +25,6 @@ SOURCES += algebra.cpp \
            lodepng/lodepng.cpp \
     photon.cpp \
     tests.cpp \
-    camera.cpp
+    camera.cpp \
+    misc.cpp \
+    kdtree/timingstats.cc

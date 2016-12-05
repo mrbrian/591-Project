@@ -625,6 +625,11 @@ inline Color operator *(const Color& a, const Color& b)
   return Color(a.R()*b.R(), a.G()*b.G(), a.B()*b.B());
 }
 
+inline Color operator /(const Color& a, float b)
+{
+  return Color(a.R()/b, a.G()/b, a.B()/b);
+}
+
 inline Color operator +(const Color& a, const Color& b)
 {
   return Color(a.R()+b.R(), a.G()+b.G(), a.B()+b.B());

@@ -25,18 +25,12 @@ void photon::set_direction(Vector3D dir)
 
 void photon::set_color(Color clr)
 {
-    p[0] = (unsigned char)(clr.R() * 255);
-    p[1] = (unsigned char)(clr.G() * 255);
-    p[2] = (unsigned char)(clr.B() * 255);
-    p[3] = 0;//(char)(dir.R() * 255);
+    color = clr;
 }
 
 Color *photon::get_color()
 {
-    return new Color(
-            (double)p[0] / 255,
-            (double)p[1] / 255,
-            (double)p[2] / 255);
+    return &color;
 }
 
 Point3D photon::get_position()

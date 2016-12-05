@@ -2,33 +2,18 @@
 #define MISC_H
 
 #include <random>
+#include "lodepng/lodepng.h"
+#include "algebra.h"
 
-// -----------------------------------------
-//    RANDOM NUMBER GENERATION
-// -----------------------------------------
-
-// Mersenne Twister 19937 generator
-// A Mersenne Twister pseudo-random generator of 32-bit numbers with a state size of 19937 bits.
-// http://www.cplusplus.com/reference/random/mt19937/
-
-std::mt19937 MersenneTwisterPRNG;
-
-// Uniform real distribution
-// Random number distribution that produces floating-point values according to a uniform distribution,
-// which is described by the following probability density function (...) - more details here:
-// http://www.cplusplus.com/reference/random/uniform_real_distribution/
-
-std::uniform_real_distribution<double> m_URD;
-
-// Hemisphere sampling (i.e., for diffuse reflection)
-// function "m_Vector HemisphereSampling(m_Vector m_normal)" below
-// calls both m_RND_1 and m_RND_2
-double RAND_2()
+class misc
 {
-    return (m_URD(MersenneTwisterPRNG));    // [-1,1]
-}
-
-#define m_RND_1 (2.0*m_URD(MersenneTwisterPRNG)-1.0)    // [-1,1]
-#define m_RND_2 (m_URD(MersenneTwisterPRNG))        // [0,1]
+public:
+    static double RAND_1();
+    static double RAND_2();
+    static void debug(const char *s);
+    static double clamp(double min, double max, double in);
+    static double degToRad(float deg);
+    static void save_color_image (const char *filename, Color *image, int width, int height);
+};
 
 #endif // MISC_H

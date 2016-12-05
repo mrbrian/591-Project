@@ -4,6 +4,7 @@
 #include "algebra.h"
 #include "material.h"
 #include "polyroots.h"
+#include "misc.h"
 
 extern double RAND_2();
 
@@ -11,6 +12,8 @@ class SceneObject
 {
 public:
     Material *material;
+    Vector3D normal;
+
     virtual char const *type()
     {
         return "SceneObject";
@@ -21,9 +24,10 @@ public:
         m = 0;
     }
 
-    virtual Point3D point_on_surface()
+    virtual void point_on_surface(Point3D &pos, Vector3D &norm)
     {
-        return Point3D(-1,-1,-1);
+        pos = Point3D(-1,-1,-1);
+        norm = Vector3D(-1,-1,-1);
     }
 
     virtual double intersect(Point3D o, Vector3D v, Vector3D *n)
@@ -37,7 +41,7 @@ public:
 class Triangle : public SceneObject
 {
 public:
-    Point3D verts[3];
+    Point3D verts[3];    
 
     char const *type()
     {
@@ -50,6 +54,7 @@ public:
         verts[0] = p1;
         verts[1] = p2;
         verts[2] = p3;
+        normal = -(verts[1] - verts[0]).cross(verts[2] - verts[0]);
     }
 
     double area(Point3D a, Point3D b, Point3D c)
@@ -162,7 +167,7 @@ public:
         return result;
     }
 
-    Point3D point_on_surface() override
+    void point_on_surface(Point3D &pos, Vector3D &normal) override
     {
         // return a random point on surface
         Point3D topleft  = points[0];
@@ -172,11 +177,11 @@ public:
         Vector3D right = topright - topleft;
         Vector3D down = botleft - topleft;
 
-        double h_pct = RAND_2();
-        double v_pct = RAND_2();
+        double h_pct = misc::RAND_2();
+        double v_pct = misc::RAND_2();
 
-        Point3D result = (topleft + (h_pct * right) + (v_pct * down));
-        return result;
+        pos = (topleft + (h_pct * right) + (v_pct * down));
+        normal = tris[0]->normal;
     }
 };
 

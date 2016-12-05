@@ -1,19 +1,25 @@
 #include "scene.h"
-#include "misc.h"
 
-#define MAX_DEPTH   5
-#define BG_COLOR    Color(0,0,0)
+#ifdef DEBUG
+#define debug(fmt, ...)  do { \
+  if (debugging_enabled) { printf(fmt, ##__VA_ARGS__); } \
+} while (0)
+#else
+#define debug(fmt, ...)
+#endif
 
-Light::Light(Point3D pos, Color a, Color d, Color s, double in_watts)
+#define MAX_DEPTH   10
+#define BG_COLOR    Color(1,0,0)
+#define NORM_EPSILON     0.001
+
+Light::Light(Point3D pos, Color c, double in_watts)
 {
     position = pos;
-    Ia = a;
-    Id = d;
-    Is = s;
+    clr = c;
     watts = in_watts;
 }
 
-void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
+void Light::emit_photons(int to_emit, float energy, vector<photon*> *out_photons)
 {
     int num_emit = 0;
     while (num_emit < to_emit)
@@ -24,31 +30,30 @@ void Light::emit_photons(int to_emit, vector<photon*> *out_photons)
         Vector3D dir;
         do
         {
-            x = m_RND_1;
-            y = m_RND_1;
-            z = m_RND_1;
+            x = misc::RAND_1();
+            y = misc::RAND_1();
+            z = misc::RAND_1();
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
-        photon *p = new photon;
-        p->set_position(position);
         dir.normalize();
-        p->set_direction(dir);
-        p->set_color(Id);       // only using the diffuse color..(?)
+        photon *p = new photon(position, dir, clr, energy);       // only using the diffuse color..(?)
 
         out_photons->push_back(p);
         num_emit++;
     }
 }
 
-LightObject::LightObject(Point3D pos, Color a, Color d, Color s, double in_watts, SceneObject *o)
-    : Light(pos, a, d, s, in_watts)
+
+LightObject::LightObject(Point3D pos, Color c, double in_watts, SceneObject *o)
+    : Light(pos, c, in_watts)
 {
     obj = o;
 
 }
 
-void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
+
+void LightObject::emit_photons(int to_emit, float energy, vector<photon*> *out_photons)
 {
     int num_emit = 0;
     while (num_emit < to_emit)
@@ -56,25 +61,42 @@ void LightObject::emit_photons(int to_emit, vector<photon*> *out_photons)
         double x;
         double y;
         double z;
+
+        Vector3D norm;
+        Point3D p_pos;
+        obj->point_on_surface(p_pos, norm);
+        norm.normalize();
+
         Vector3D dir;
         do
         {
-            x = m_RND_1;
-            y = m_RND_1;
-            z = m_RND_1;
+            x = misc::RAND_1();
+            y = misc::RAND_1();
+            z = misc::RAND_1();
             dir = Vector3D(x, y, z);
         }
-        while (dir.length2() > 1);
-        photon *p = new photon;
-        Point3D p_pos = obj->point_on_surface();
-        p->set_position(p_pos);
+        while (dir.length2() > 1 || dir.dot(norm) < 0);
         dir.normalize();
-        p->set_direction(dir);
-        p->set_color(Id);       // only using the diffuse color..(?)
+
+        photon *p = new photon(p_pos, dir, clr, energy);
 
         out_photons->push_back(p);
         num_emit++;
     }
+}
+
+
+double Light::intersect(Point3D o, Vector3D v, Vector3D *n)
+{
+    o = Point3D();  // get rid of warnings
+    v = *n;
+    return -1;
+}
+
+
+double LightObject::intersect(Point3D o, Vector3D v, Vector3D *n)
+{
+    return obj->intersect(o, v, n);
 }
 
 // ----------------------------------------------------------------------------
@@ -124,8 +146,8 @@ void BuildOrthonormalSystem(const Vector3D& v1, Vector3D& v2, Vector3D& v3)
 
 Vector3D HemisphereSampling(Vector3D m_normal)
 {
-    float r_1 = m_RND_2;
-    float r_2 = m_RND_2;
+    float r_1 = misc::RAND_2();
+    float r_2 = misc::RAND_2();
 
     float r = sqrt(1 - r_1 * r_2);
     float phi = 2 * M_PI * r_2;
@@ -151,7 +173,6 @@ Vector3D HemisphereSampling(Vector3D m_normal)
     return m_rotated_ray_direction;
 }
 
-
 Color *Scene::Render()
 {
     Color * result = new Color[cam.imgWidth * cam.imgHeight];
@@ -167,8 +188,9 @@ Color *Scene::Render()
 
             Color &c = result[x + y * cam.imgWidth];
 
-            if (!trace_ray(cam.position, v, &c, 1))   // if ray hit nothing
-                c = BG_COLOR;                               // use background color
+            if (!trace_ray_lights(cam.position, v, &c, 1))   // if ray hit nothing
+                if (!trace_ray(cam.position, v, &c, 1))   // if ray hit nothing
+                    c = BG_COLOR;                               // use background color
         }
     }
     return result;
@@ -183,8 +205,8 @@ Point2D Scene::calc_image_coords(Point3D pt)
     float height = cam.imgHeight;
 
     Matrix4x4 m_screenCoords = Matrix4x4();           // make transform for converting NDC space to screenspace
-    m_screenCoords[0][0] = width / 2;
-    m_screenCoords[1][1] = -height / 2;
+    m_screenCoords[0][0] = -width / 2;
+    m_screenCoords[1][1] = height / 2;
     m_screenCoords = Matrix4x4::translation(Vector3D(width / 2, height / 2, 0)) * m_screenCoords;
 
     // Apply the view matrix
@@ -238,7 +260,7 @@ Color *Scene::Render(vector<photon*> *photon_map)
         if (idx < 0 || idx >= cam.imgHeight * cam.imgWidth)
             continue;
         Color &pixel = result[x + y * cam.imgWidth];
-        pixel = *(p->get_color());
+        pixel = pixel + *(p->get_color());
     }
 
     return result;
@@ -317,7 +339,7 @@ bool Scene::trace_ray(Point3D o, Vector3D v, Color *color, int depth)
     for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
     {
         Light *light= (*it);
-        col = col + hitObject->material->Ka * light->Ia;
+        col = col + hitObject->material->Ka;
 
         Point3D new_p = p + 0.1 * (light->position - p);
         if (intersection_test(this, new_p, light->position))
@@ -329,9 +351,9 @@ bool Scene::trace_ray(Point3D o, Vector3D v, Color *color, int depth)
         Vector3D r = -l + 2 * (l.dot(n)) * n;
 
         // add diffuse color
-        col = col + (hitObject->material->GetKd(p) * fmax(n.dot(l), 0) * light->Id);
+        col = col + (hitObject->material->GetKd(p) * fmax(n.dot(l), 0) * light->clr);
         // add specular color
-        col = col + (hitObject->material->Ks * pow(fmax(r.dot(-v), 0), hitObject->material->p) * light->Is);
+        col = col + (hitObject->material->Ks * pow(fmax(r.dot(-v), 0), hitObject->material->p) * light->clr);
     }
 
     Color reflect_rgb;     // reflection color;
@@ -348,27 +370,27 @@ bool Scene::trace_ray(Point3D o, Vector3D v, Color *color, int depth)
 
 SceneObject *find_closest_intersection(Scene *scene, Point3D o, Vector3D v, double *t_min_ptr, Vector3D *n_min_ptr)
 {
-	SceneObject *hitObject = NULL;
-	double &t_min = *t_min_ptr;
-	Vector3D &n_min = *n_min_ptr;
+    SceneObject *hitObject = NULL;
+    double &t_min = *t_min_ptr;
+    Vector3D &n_min = *n_min_ptr;
 
-	for (std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
-	{
-		SceneObject *obj = (*it);
+    for (std::vector<SceneObject*>::iterator it = scene->objects.begin(); it != scene->objects.end(); ++it)
+    {
+        SceneObject *obj = (*it);
 
-		Vector3D n;
-		double t = obj->intersect(o, v, &n);      // whats the n?
+        Vector3D n;
+        double t = obj->intersect(o, v, &n);      // whats the n?
 
-		if (0 <= t && t < t_min)
-		{
-			t_min = t;
-			if (n.dot(v) >= 0)
-				n = -n;
-			n_min = n;
-			hitObject = obj;
-		}
-	}
-	return hitObject;
+        if (0 <= t && t < t_min)
+        {
+            t_min = t;
+            if (n.dot(v) >= 0)
+                n = -n;
+            n_min = n;
+            hitObject = obj;
+        }
+    }
+    return hitObject;
 }
 
 bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Point3D *_out_pos, Vector3D *_out_norm, Vector3D *_out_reflect, Vector3D *_out_refract, Color *_out_clr, Material *_out_mat)
@@ -380,15 +402,15 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     Color &out_clr = *_out_clr;
     Material &out_mat = *_out_mat;
 
-	double t_min = INFINITY;
-	Vector3D n_min;
-	SceneObject *hitObject = NULL;
+    double t_min = INFINITY;
+    Vector3D n_min;
+    SceneObject *hitObject = NULL;
     in_dir.normalize();
 
-	// find closest intersection point, the object
+    // find closest intersection point, the object
     hitObject = find_closest_intersection(this, in_pos, in_dir, &t_min, &n_min);
 
-	if (hitObject == NULL)              // check for no intersection
+    if (hitObject == NULL)              // check for no intersection
         return false;
 
     out_mat = *hitObject->material;
@@ -400,7 +422,7 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
     out_reflect = in_dir + (2 * n_min.dot(-in_dir)) * n_min;
 
     out_clr = *in_clr;
-    // add diffuse color    
+    // add diffuse color
     //out_clr = (hitObject->material->GetKd(p_int));//* fmax(n.dot(in_dir), 0) * light->Id);
     return true;
 }
@@ -410,10 +432,10 @@ bool Scene::trace_primary_ray(Point3D in_pos, Vector3D in_dir, Color *in_clr, Po
 void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 {
     // If depth >= MAX_DEPTH then Each recursive step will stop w/ a probability of 0.1
-    if ((depth >= MAX_DEPTH) & (m_RND_2 <= 0.1))
+    if ((depth >= MAX_DEPTH) & (misc::RAND_2() <= 0.1))
         return;
 
-    Point3D start_pos = Point3D(in_pho->x, in_pho->y, in_pho->z);
+    Point3D start_pos = in_pho->get_position();
     Vector3D direction = in_pho->get_direction();
     Color *clr = in_pho->get_color();
 
@@ -426,7 +448,7 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
 
     if (!trace_primary_ray(start_pos, direction, clr, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, &i_mat))
     {
-        printf("miss %d: %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2], direction[0], direction[1], direction[2]);
+        debug("miss %d: %f %f %f - %f %f %f\n", depth, start_pos[0], start_pos[1], start_pos[2], direction[0], direction[1], direction[2]);
         return;
     }
 
@@ -435,19 +457,27 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
     if (ray_type == RayType::Diffuse)
         i_clr = Color(i_clr.R() * i_mat.Kd.R(), i_clr.G() * i_mat.Kd.G(), i_clr.B() * i_mat.Kd.B());
 
-    printf("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
+    debug("%f %f %f\n",
+           i_normal.get_x(),
+           i_normal.get_y(),
+           i_normal.get_z()
+        );
+    debug("%d: %f %f %f - %f %f %f - %f %f %f\n", depth, (start_pos)[0], (start_pos)[1], (start_pos)[2],
             direction[0], direction[1], direction[2],
             i_clr.R(), i_clr.G(), i_clr.B()
             );
 
     // store photon in photon list
-    photon *store_photon = new photon();
-    store_photon->set_position(i_point);
-    store_photon->set_direction(direction);
-    store_photon->set_color(i_clr);
+    photon *store_photon = new photon(i_point, direction, i_clr, in_pho->power);
+
+    if (i_clr.R() <= 0.01 &&
+        i_clr.G() <= 0.01 &&
+        i_clr.B() <= 0.01)
+        return;
+
     out_list->push_back(store_photon);
 
-    bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, depth, out_list);
+    bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, store_photon->power, depth, out_list);
 }
 
 void Scene::emit_photons(int num_photons, vector<photon*> *photon_map)
@@ -464,37 +494,38 @@ void Scene::emit_photons(int num_photons, vector<photon*> *photon_map)
 }
 
 void Scene::bounce_photon(RayType ray_type, Point3D *i_pos, Vector3D *i_normal, Vector3D *i_reflect,
-                          Vector3D *i_refract, Color *i_clr, int depth, vector<photon*> *out_list)
+                          Vector3D *i_refract, Color *i_clr, double energy, int depth, vector<photon*> *out_list)
 {
     photon *new_photon;
     Vector3D new_dir;
     Point3D new_pos;
+    if (i_clr->R() <= 0.01 &&
+        i_clr->G() <= 0.01 &&
+        i_clr->B() <= 0.01)
+        return;
 
     switch (ray_type)
     {
     case Diffuse:
         //  choose random hemisphere direction
-        new_pos = (*i_pos) + 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_pos = (*i_pos) + NORM_EPSILON * (*i_normal);      // pull back point a bit, avoid self intersection
         new_dir = HemisphereSampling(*i_normal);
     break;
     case Specular:
         // choose a reflect direction
         // calculate reflect vector
-        new_pos = (*i_pos) + 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_pos = (*i_pos) + NORM_EPSILON * (*i_normal);      // pull back point a bit, avoid self intersection
         new_dir = *i_reflect;
 
     break;
     case Transmission:
         // check if transparent
         // if not then nothin
-        new_pos = (*i_pos) - 0.001 * (*i_normal);      // pull back point a bit, avoid self intersection
+        new_pos = (*i_pos) - NORM_EPSILON * (*i_normal);      // pull back point a bit, avoid self intersection
         new_dir = *i_refract;
         return;
     }
-    new_photon = new photon();
-    new_photon->set_position(new_pos);
-    new_photon->set_direction(new_dir);
-    new_photon->set_color(*i_clr);
+    new_photon = new photon(new_pos, new_dir, *i_clr, energy);
 
     trace_photon(new_photon, depth + 1, out_list);
 }
@@ -513,7 +544,7 @@ Scene::RayType Scene::russian_roulette(Material *mat)   // [0, d] diffuse reflec
     float p_diff = diff_sum / (diff_sum + spec_sum) * p_refl;
     float p_spec = spec_sum / (diff_sum + spec_sum) * p_refl;
 
-    float r = m_RND_2;
+    float r = misc::RAND_2();
 
     if (r >= 0 && r < p_diff)
         return RayType::Diffuse;
@@ -539,6 +570,397 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
     {
         Light *obj = (*it);
         int num_to_emit = (int)(obj->watts / energy_per_photon);
-        obj->emit_photons(num_to_emit, out_photons);
+        obj->emit_photons(num_to_emit, energy_per_photon, out_photons);
     }
+}
+
+// phong brdf
+// x = surfact point
+// pd = incident direction
+// v = reflected direction
+
+Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
+{
+    Vector3D ref_dir = pd + (2 * x.normal.dot(-pd)) * x.normal;
+
+    double pd_dot_norm = std::max(0.0, -pd.dot(x.normal));
+    double ref_dot_view = std::max(0.0, -ref_dir.dot(view));
+
+    Color diff = pd_dot_norm * x.material->Kd;
+    Color spec = ref_dot_view * x.material->Ks;
+
+    return (diff + spec);
+}
+
+#define NUM_OF_COLLECT_PHOTONS 10
+
+Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, SurfacePoint end_pt)
+{
+    // how much light is at this point?
+    // locate k nearest photons
+    // how much light from each
+
+    const photon p = photon(end_pt.position, Vector3D(0,1,0), Color(0,0,0), 0);
+    vector<photon> nearest = kd->getKNearest(p, NUM_OF_COLLECT_PHOTONS);
+
+    int num_photons = nearest.size();
+
+    if (num_photons == 0)
+        return Color(-1,-1,-1);
+
+    double r_2 = 0;  //distance to kth nearest photon
+    Color flux = Color(0,0,0);
+
+    debug("%f %f %f - %f %f %f\n",
+           end_pt.normal.get_x(),
+           end_pt.normal.get_y(),
+           end_pt.normal.get_z(),
+           end_pt.position[0],
+           end_pt.position[1],
+           end_pt.position[2]
+           );
+    for ( std::vector<photon>::iterator it = nearest.begin(); it != nearest.end(); ++it)
+    {
+        photon pho = *it;
+        Vector3D delta = pho.get_position() - end_pt.position;
+        if (delta.length2() > r_2)
+            r_2 = delta.length2();
+
+        debug("%f %f %f %f - %f %f %f - %f %f %f \n",
+               pho.get_color()->R(),
+               pho.get_color()->G(),
+               pho.get_color()->B(),
+               delta.length2(),
+               pho.get_direction().get_x(),
+               pho.get_direction().get_y(),
+               pho.get_direction().get_z(),
+               pho.get_position()[0],
+               pho.get_position()[1],
+               pho.get_position()[2]
+               );
+
+        Vector3D pd = pho.get_direction();
+        double pw = pho.power;
+
+        Vector3D eye_dir = pho.get_direction() - cam.position; // eye direction
+
+        Color brdf = BRDF(end_pt, eye_dir, pd);
+        flux = flux + brdf * pw * pho.color;
+        //flux = flux + brdf * pho.color;
+    }
+
+    debug("radius2 %f\n", r_2);
+    flux = flux / (M_PI * r_2);
+    return flux;// / NUM_OF_COLLECT_PHOTONS;
+}
+
+Color Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, int x, int y)
+{
+    // iterate over the pixels & set colour values
+    // determine ray vector
+    Point3D p = imgPlane->ImageToWorldSpace(x, y, cam.imgWidth, cam.imgHeight);
+    Vector3D v = p - cam.position;
+    v.normalize();
+
+    Color c;
+    Ray ray = Ray(p, v);
+
+    if (!trace_ray_lights(ray.origin, ray.direction, &c, 1))   // if ray hit a light
+    {
+        if (!trace_ray(kd, ray, &c, 1))   // if ray hit nothing
+            c = BG_COLOR;                       // use background color
+    }
+    return c;
+}
+
+Color *Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd)
+{
+    Color * result = new Color[cam.imgWidth * cam.imgHeight];
+    // iterate over the pixels & set colour values
+    for (int x = 0; x < cam.imgWidth; x++)
+    {
+        for (int y = 0; y < cam.imgHeight; y++)
+        {
+            result[x + y * cam.imgWidth] = Render(kd, x, y);
+        }
+    }
+    return result;
+}
+
+bool Scene::trace_ray(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Ray ray, Color *color, int depth)
+{
+    debug("trace_ray depth %d\n", depth);
+    if (depth > MAX_DEPTH)  // stop recursing
+        return false;
+
+    double t_min = INFINITY;
+    Vector3D n_min;
+    SceneObject *hitObject = NULL;
+    ray.direction.normalize();
+
+    Color &col = *color;
+    if (depth == 1)         // start ... with no colour
+        col = Color(0,0,0);
+
+    for(std::vector<SceneObject*>::iterator it = objects.begin(); it != objects.end(); ++it)
+    {
+        SceneObject *obj = (*it);
+
+        Vector3D n;
+        double t = obj->intersect(ray.origin, ray.direction, &n);      // whats the n?
+
+        if (0 <= t && t < t_min)
+        {
+            t_min = t;
+            if (n.dot(ray.direction) >= 0)
+                n = -n;
+            n_min = n;
+            hitObject = obj;
+        }
+    }
+
+    if (hitObject == NULL)              // check for no intersection
+    {
+        return false;
+    }
+
+    Point3D p_int = ray.origin + t_min * ray.direction;      // calculate intersection point
+
+    p_int = p_int + 0.001 * n_min;      // pull back point a bit, avoid self intersection
+
+    // found closest intersection
+    Point3D p = ray.origin + t_min * ray.direction;
+
+    Vector3D n = n_min;
+
+    // add radiance estimate
+    SurfacePoint end_pt = SurfacePoint(p_int, n_min, hitObject->material);
+    Color brdf = radiance_estimate(kd, end_pt);
+
+    // calculate reflect vector
+    Vector3D r = ray.direction + (2 * n_min.dot(-ray.direction)) * n_min;
+
+    Ray new_ray = Ray(p_int, r);
+    Color reflect_rgb;
+
+    if (!trace_ray(kd, new_ray, &reflect_rgb, depth + 1))   //reflect color
+        reflect_rgb = Color(0,0,0);
+
+    // add reflection color
+    col = col + brdf + reflect_rgb * end_pt.material->Kr;
+    return true;
+}
+
+bool Scene::trace_ray_lights(Point3D o, Vector3D v, Color *color, int depth)
+{
+    debug("trace_ray_lights depth %d\n", depth);
+
+    double t_min = INFINITY;
+    Vector3D n_min;
+    Light *hitLight = NULL;
+    v.normalize();
+
+    Color &col = *color;
+    if (depth == 1)         // start ... with no colour
+        col = Color(0,0,0);
+
+    for(std::vector<Light*>::iterator it = lights.begin(); it != lights.end(); ++it)
+    {
+        Light *obj = (*it);
+
+        Vector3D n;
+        double t = obj->intersect(o, v, &n);      // whats the n?
+
+        if (0 <= t && t < t_min)
+        {
+            t_min = t;
+            if (n.dot(v) >= 0)
+                n = -n;
+            n_min = n;
+            hitLight = obj;
+        }
+    }
+
+    if (hitLight == NULL)              // check for no intersection
+    {
+        return false;
+    }
+
+    // add emission color
+    col = hitLight->clr;
+    return true;
+}
+
+
+// cornell scene
+Scene *Scene::cornellBoxScene(int width, int height)
+{
+    Scene *s = new Scene();
+    Scene &scene = *s;
+    Camera cam = Camera();
+
+    cam.imgWidth = width;
+    cam.imgHeight = height;
+    //cam.lookAt = Point3D(0, 0, -1);
+    cam.position = Point3D(0, 0, 0);
+    cam.fov = 53.1301024 / 180 * M_PI;
+    cam.near = 1;
+    cam.far = 10;
+    cam.aspect = 1;//(float)width / height;
+
+    scene.cam = cam;
+    float img_plane_w = 0.5f;
+    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
+    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+
+    scene.imgPlane = cam.calc_img_plane();
+    for (int y = 0; y < 4; y++)
+    {
+        debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
+
+    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
+    for (int y = 0; y < 4; y++)
+    {
+        debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
+    }
+
+    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_light = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
+    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
+
+    // Ceiling
+    Quad *q_1 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(2.75, 2.75, -5),
+        Point3D(-2.75, 2.75, -5),
+        Point3D(-2.75, 2.75, -10.5),
+        mat_ceil);
+
+    scene.objects.push_back(q_1);
+
+    // Ceiling light
+    Quad *light_q = new Quad(
+        Point3D(0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -7.224),
+        Point3D(0.653, 2.74, -7.224),
+        mat_light);
+
+    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 125, light_q);
+    scene.lights.push_back(l_obj);
+
+    // Green wall on left
+    Quad *q_2 = new Quad(
+        Point3D(-2.75, 2.75, -10.5),
+        Point3D(-2.75, 2.75, -5),
+        Point3D(-2.75, -2.75, -5),
+        Point3D(-2.75, -2.75, -10.5),
+        mat_grn);
+    scene.objects.push_back(q_2);
+
+    //   // Red wall on right
+    Quad *q_3 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(2.75, -2.75, -10.5),
+        Point3D(2.75, -2.75, -5),
+        Point3D(2.75, 2.75, -5),
+        mat_red);
+    scene.objects.push_back(q_3);
+
+    //   // Floor
+    Quad *q_4 = new Quad(
+        Point3D(2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -5),
+        Point3D(2.75, -2.75, 5),
+        mat_floor);
+    scene.objects.push_back(q_4);
+
+    // Back wall
+    Quad *q_5 = new Quad(
+        Point3D(2.75, 2.75, -10.5),
+        Point3D(-2.75, 2.75, -10.5),
+        Point3D(-2.75, -2.75, -10.5),
+        Point3D(2.75, -2.75, -10.5),
+        mat_floor);
+    scene.objects.push_back(q_5);
+
+    Cube *sml_cube = new Cube(
+        Point3D(0, 0, 0),
+        0.5,
+        mat_ceil
+    );
+    sml_cube->Transform(
+        Matrix4x4::translation(Vector3D(-0.929, -2.75 + 3.31 / 2, -8.482)) *
+        Matrix4x4::rotation(misc::degToRad(-18.809), 'y') *
+        Matrix4x4::scaling(Vector3D(1.659, 3.31, 1.659))
+    );
+    scene.objects.push_back(sml_cube);
+
+    Cube *big_cube = new Cube(
+        Point3D(0,0,0),
+        0.5,
+        mat_ceil
+    );
+    big_cube->Transform(
+        Matrix4x4::translation(Vector3D(0.933, -2.75 + 1.655 / 2, -6.648)) *
+        Matrix4x4::rotation(misc::degToRad(16.303), 'y') *
+        Matrix4x4::scaling(Vector3D(1.655, 1.655, 1.655))
+    );
+    scene.objects.push_back(big_cube);
+    //scene.Transform(Matrix4x4::rotation(M_PI, 'y'));
+    return s;
+}
+
+
+// cornell scene
+Scene *Scene::planeScene(int width, int height)
+{
+    Scene *s = new Scene();
+    Scene &scene = *s;
+    Camera cam = Camera();
+
+    cam.imgWidth = width;
+    cam.imgHeight = height;
+    //cam.lookAt = Point3D(0, 0, -1);
+    cam.position = Point3D(0, 0, 0);
+    cam.fov = 53.1301024 / 180 * M_PI;
+    cam.near = 1;
+    cam.far = 10;
+    cam.aspect = 1;//(float)width / height;
+
+    scene.cam = cam;
+    float img_plane_w = 0.5f;
+    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
+    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+
+    scene.imgPlane = cam.calc_img_plane();
+
+    Material *mat_light = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
+    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
+
+    // Ceiling light
+    Quad *light_q = new Quad(
+        Point3D(0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -8.274),
+        Point3D(-0.653, 2.74, -7.224),
+        Point3D(0.653, 2.74, -7.224),
+        mat_light);
+
+    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 10, light_q);
+    scene.lights.push_back(l_obj);
+
+    //   // Floor
+    Quad *q_4 = new Quad(
+        Point3D(2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -10.5),
+        Point3D(-2.75, -2.75, -5),
+        Point3D(2.75, -2.75, 5),
+        mat_floor);
+    scene.objects.push_back(q_4);
+
+    return s;
 }

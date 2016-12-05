@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <assert.h>
 #include "lodepng.h"
 #include "algebra.h"
 #include "scene.h"
 #include <vector>
 #include <iostream>
+#include "kdtree/kdtree.h"
+#include "misc.h"
 
 #define DEF_WIDTH   250
 #define DEF_HEIGHT  250
@@ -17,131 +20,57 @@ double clamp(double min, double max, double in)
     return in;
 }
 
-double degToRad(float deg)
+KdTree<photon,L2Norm_2,GetDim,3,float>* make_kdtree(vector<photon*> *photon_map)
 {
-    return (M_PI / 180 * deg);
+    vector<photon> photon_map2;
+
+    for (std::vector<photon*>::iterator it = photon_map->begin(); it != photon_map->end(); ++it)
+    {
+        photon *obj = *it;
+        photon_map2.push_back(*obj);
+    }
+
+    KdTree<photon,L2Norm_2,GetDim,3,float> *kd = new KdTree<photon,L2Norm_2,GetDim,3,float>(photon_map2);
+    return kd;
 }
 
-// cornell scene
-void SetupCornellBox(Scene *s, int width, int height)
+void render_photons(Scene scene, vector<photon*> *photon_map, const char* outputStr)
 {
-    Scene &scene = *s;
-    Camera cam = Camera();
+    int width = scene.cam.imgWidth;
+    int height = scene.cam.imgHeight;
 
-    cam.imgWidth = width;
-    cam.imgHeight = height;
-    cam.lookAt = Point3D(0, 0, -1);
-    cam.position = Point3D(0, 0, 0);
-    cam.fov = 53.1301024 / 180 * M_PI;
-    cam.near = 1;
-    cam.far = 10;
-    cam.aspect = (float)width / height;
+    Color *resultImg = scene.Render(photon_map);
 
-    scene.cam = cam;
-    float img_plane_w = 0.5f;
-    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
-    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
+}
 
-    scene.imgPlane = cam.calc_img_plane();
-    for (int y = 0; y < 4; y++)
-    {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
-    }
 
-   // scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
-    for (int y = 0; y < 4; y++)
-    {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
-    }
-    for (int y = 0; y < 4; y++)
-    {
-        printf("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
-    }
+void normal_render(Scene scene, const char* outputStr)
+{
+    int width = scene.cam.imgWidth;
+    int height = scene.cam.imgHeight;
 
-    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1000, Color(0, 0, 0));
-    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 100, Color(0, 0, 0));
-    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
-    Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
+    // create new image
+    std::vector<unsigned char> image;
+    image.resize(width * height * 4);
 
-    // Ceiling
-    Quad *q_1 = new Quad(
-        Point3D(2.75, 2.75, -10.5),
-        Point3D(2.75, 2.75, -5),
-        Point3D(-2.75, 2.75, -5),
-        Point3D(-2.75, 2.75, -10.5),
-        mat_ceil);
+    Color *resultImg = scene.Render();
 
-    scene.objects.push_back(q_1);
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
+}
 
-    // Ceiling light
-    Quad *light_q = new Quad(
-        Point3D(0.653, 2.74, -8.274),
-        Point3D(-0.653, 2.74, -8.274),
-        Point3D(-0.653, 2.74, -7.224),
-        Point3D(0.653, 2.74, -7.224),
-        mat_red);
-    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(0.1, 0.1, 0.1), Color(1, 1, 1), Color(0, 0, 0), 1, light_q);
-    scene.lights.push_back(l_obj);
+void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
+{
+    int width = scene.cam.imgWidth;
+    int height = scene.cam.imgHeight;
+    KdTree<photon,L2Norm_2,GetDim,3,float> *tree = make_kdtree(photons);
 
-    // Green wall on right
-    Quad *q_2 = new Quad(
-        Point3D(-2.75, 2.75, -10.5),
-        Point3D(-2.75, 2.75, -5),
-        Point3D(-2.75, -2.75, -5),
-        Point3D(-2.75, -2.75, -10.5),
-        mat_grn);
-    scene.objects.push_back(q_2);
+    Color *resultImg = scene.Render(tree);
 
-    //   // Red wall on left
-    Quad *q_3 = new Quad(
-        Point3D(2.75, 2.75, -10.5),
-        Point3D(2.75, -2.75, -10.5),
-        Point3D(2.75, -2.75, -5),
-        Point3D(2.75, 2.75, -5),
-        mat_red);
-    scene.objects.push_back(q_3);
-
-    //   // Floor
-    Quad *q_4 = new Quad(
-        Point3D(2.75, -2.75, -10.5),
-        Point3D(-2.75, -2.75, -10.5),
-        Point3D(-2.75, -2.75, -5),
-        Point3D(2.75, -2.75, 5),
-        mat_floor);
-    scene.objects.push_back(q_4);
-
-    // Back wall
-    Quad *q_5 = new Quad(
-        Point3D(2.75, 2.75, -10.5),
-        Point3D(-2.75, 2.75, -10.5),
-        Point3D(-2.75, -2.75, -10.5),
-        Point3D(2.75, -2.75, -10.5),
-        mat_floor);
-    scene.objects.push_back(q_5);
-
-    Cube *sml_cube = new Cube(
-        Point3D(0, 0, 0),
-        0.5,
-        mat_ceil
-    );
-    sml_cube->Transform(
-        Matrix4x4::translation(Vector3D(-0.929, -2.75 + 3.31 / 2, -8.482)) *
-        Matrix4x4::rotation(degToRad(-18.809), 'y') *
-        Matrix4x4::scaling(Vector3D(1.659, 3.31, 1.659))
-    );
-    scene.objects.push_back(sml_cube);
-
-    Cube *big_cube = new Cube(
-        Point3D(0,0,0),
-        0.5,
-        mat_ceil
-    );
-    big_cube->Transform(
-        Matrix4x4::translation(Vector3D(0.933, -2.75 + 1.655 / 2, -6.648)) *
-        Matrix4x4::rotation(degToRad(16.303), 'y') *
-        Matrix4x4::scaling(Vector3D(1.655, 1.655, 1.655))
-    );
-    scene.objects.push_back(big_cube);
+    misc::save_color_image(outputStr, resultImg, width, height);
+    delete (resultImg);
 }
 
 int main(int argc, char *argv[])
@@ -160,55 +89,15 @@ int main(int argc, char *argv[])
         outputStr = argv[3];
     }
 
-    SetupCornellBox(&scene, width, height);
-
-    // create new image
-    std::vector<unsigned char> image;
-    image.resize(width * height * 4);
-
-    vector<photon*> *photon_map = new vector<photon*>;
-    scene.emit_photons(100000, photon_map);
+    scene = *Scene::cornellBoxScene(width, height);
 
 
-    Color *resultImg = scene.Render();
+    vector<photon*> photon_map;
+    scene.emit_photons(10000, &photon_map);
 
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            int idx = x + y * scene.cam.imgWidth;
-            Color &c = resultImg[idx];
-            // clamp rgb values [0,1]
-            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
-            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
-            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
-            image[4 * idx + 3] = 255;
-        }
-    }
-    // save to file
-    unsigned int error = lodepng::encode(outputStr, image, width, height);
-
-    resultImg = scene.Render(photon_map);
-
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y < height; y++)
-        {
-            int idx = x + y * scene.cam.imgWidth;
-            Color &c = resultImg[idx];
-            // clamp rgb values [0,1]
-            image[4 * idx + 0] = clamp(0, 1, c.R()) * 255;
-            image[4 * idx + 1] = clamp(0, 1, c.G()) * 255;
-            image[4 * idx + 2] = clamp(0, 1, c.B()) * 255;
-            image[4 * idx + 3] = 255;
-        }
-    }
-    // save to file
-    error = lodepng::encode("photons", image, width, height);
-
-    /*if there's an error, display it*/
-    if (error)
-        printf("error %u: %s\n", error, lodepng_error_text(error));
+    normal_render(scene, "standard");
+    render_photons(scene, &photon_map, "photons");
+    final_render(scene, &photon_map, "final");
 
     // application successfully returned
     return 0;

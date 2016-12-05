@@ -12,7 +12,8 @@ CONFIG += c++11
 HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \
     photon.h \
     misc.h \
-    camera.h
+    camera.h \
+    kdtree/kdtree.h
 SOURCES += algebra.cpp \
            main.cpp \
            material.cpp \
@@ -20,4 +21,5 @@ SOURCES += algebra.cpp \
            scene.cpp \
            lodepng/lodepng.cpp \
     photon.cpp \
-    camera.cpp
+    camera.cpp \
+    misc.cpp

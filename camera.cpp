@@ -26,10 +26,10 @@ Plane *Camera::calc_img_plane()
     double x1 = std::tan(fov / 2) * near;
     double y1 = std::tan(fov / 2) * near;
     Plane *result = new Plane(
-                Point3D(-x1, y1, near),
-                Point3D(-x1, -y1, near),
+                Point3D(x1, y1, near),
                 Point3D(x1, -y1, near),
-                Point3D(x1, y1, near)
+                Point3D(-x1, -y1, near),
+                Point3D(-x1, y1, near)
             );
     Matrix4x4 m_view = get_view_matrix();
     result->Transform(m_view);
