@@ -6,7 +6,7 @@
 class Material
 {
 public:
-    Material() {}
+    Material() { p = 0; }
     Material(Color a, Color d, Color s, double p, Color r);
     Material(Color a, Color d, Color s, double p);
 
