@@ -26,11 +26,11 @@ struct GetDim{
    float operator () (const photon &n1,unsigned dim)const{
     switch (dim)
     {
-    case 1:
+    case 0:
         return n1.x;
-    case 2:
+    case 1:
         return n1.y;
-    case 3:
+    case 2:
         return n1.z;
     default:
         printf("incorrect dim parameter\n");
@@ -142,7 +142,7 @@ public:
     Point2D calc_image_coords(Point3D pt);
 
     // collide photon with the scene objects
-    Color BRDF(SurfacePoint x, Vector3D view, Vector3D pd);
+    Color BRDF(SurfacePoint &x, Vector3D &view, Vector3D &pd);
     void initialize_photons(int num_photons, vector<photon*> *out_photons);
     RayType russian_roulette(Material *mat);
     void emit_photons(int num_photons, vector<photon*> *photon_map);

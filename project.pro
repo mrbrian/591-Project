@@ -7,6 +7,7 @@ TARGET = project
 INCLUDEPATH += .\
             lodepng
 CONFIG += c++11
+#-fopenmp
 
 # Input
 HEADERS += algebra.h material.h polyroots.h scene.h shapes.h lodepng/lodepng.h \

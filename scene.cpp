@@ -1,5 +1,10 @@
 #include "scene.h"
 
+//#define DEBUG 1
+//#define debugging_enabled 1
+
+const double m_samples_per_pixel = 50;
+
 #ifdef DEBUG
 #define debug(fmt, ...)  do { \
   if (debugging_enabled) { printf(fmt, ##__VA_ARGS__); } \
@@ -8,7 +13,7 @@
 #define debug(fmt, ...)
 #endif
 
-#define MAX_DEPTH   10
+#define MAX_DEPTH   5
 #define BG_COLOR    Color(1,0,0)
 #define NORM_EPSILON     0.001
 
@@ -63,7 +68,19 @@ void LightObject::emit_photons(int to_emit, float energy, vector<photon*> *out_p
         obj->point_on_surface(p_pos, norm);
         norm.normalize();
 
-        Vector3D dir = HemisphereSampling(norm);
+        double x;
+        double y;
+        double z;
+        Vector3D dir;
+        do
+        {
+            x = 0.5f * misc::RAND_1();
+            y = misc::RAND_2() * -50.0f - 0.5f;
+            z = 0.5f * misc::RAND_1();
+            dir = Vector3D(x, y, z);
+        }
+        while (dir.length2() > 1);
+        dir = norm;//.normalize();
 
         photon *p = new photon(p_pos, dir, clr, energy);
 
@@ -568,7 +585,7 @@ void Scene::initialize_photons(int num_photons, vector<photon*> *out_photons)
 // pd = incident direction
 // v = reflected direction
 
-Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
+Color Scene::BRDF(SurfacePoint &x, Vector3D& view, Vector3D& pd)
 {
     Vector3D ref_dir = pd + (2 * x.normal.dot(-pd)) * x.normal;
 
@@ -581,8 +598,6 @@ Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
     return (diff + spec);
 }
 
-#define NUM_OF_COLLECT_PHOTONS 500
-
 Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, SurfacePoint end_pt)
 {
     // how much light is at this point?
@@ -590,7 +605,7 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
     // how much light from each
 
     const photon p = photon(end_pt.position, Vector3D(0,1,0), Color(0,0,0), 0);
-    vector<photon> nearest = kd->getKNearest(p, NUM_OF_COLLECT_PHOTONS);
+    vector<photon> nearest = kd->getKNearest(p, m_samples_per_pixel);
 
     int num_photons = nearest.size();
 
@@ -600,14 +615,14 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
     double r_2 = 0;  //distance to kth nearest photon
     Color flux = Color(0,0,0);
 
-    debug("%f %f %f - %f %f %f\n",
-           end_pt.normal.get_x(),
-           end_pt.normal.get_y(),
-           end_pt.normal.get_z(),
-           end_pt.position[0],
-           end_pt.position[1],
-           end_pt.position[2]
-           );
+//    debug("%f %f %f - %f %f %f\n",
+//           end_pt.normal.get_x(),
+//           end_pt.normal.get_y(),
+//           end_pt.normal.get_z(),
+//           end_pt.position[0],
+//           end_pt.position[1],
+//           end_pt.position[2]
+//           );
     for ( std::vector<photon>::iterator it = nearest.begin(); it != nearest.end(); ++it)
     {
         photon pho = *it;
@@ -615,18 +630,18 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
         if (delta.length2() > r_2)
             r_2 = delta.length2();
 
-        debug("%f %f %f %f - %f %f %f - %f %f %f \n",
-               pho.get_color()->R(),
-               pho.get_color()->G(),
-               pho.get_color()->B(),
-               delta.length2(),
-               pho.get_direction().get_x(),
-               pho.get_direction().get_y(),
-               pho.get_direction().get_z(),
-               pho.get_position()[0],
-               pho.get_position()[1],
-               pho.get_position()[2]
-               );
+//        debug("%f %f %f %f - %f %f %f - %f %f %f \n",
+//               pho.get_color()->R(),
+//               pho.get_color()->G(),
+//               pho.get_color()->B(),
+//               delta.length2(),
+//               pho.get_direction().get_x(),
+//               pho.get_direction().get_y(),
+//               pho.get_direction().get_z(),
+//               pho.get_position()[0],
+//               pho.get_position()[1],
+//               pho.get_position()[2]
+//               );
 
         Vector3D pd = pho.get_direction();
         double pw = pho.power;
@@ -635,12 +650,11 @@ Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, Surfa
 
         Color brdf = BRDF(end_pt, eye_dir, pd);
         flux = flux + brdf * pw * pho.color;
-        //flux = flux + brdf * pho.color;
     }
 
-    debug("radius2 %f\n", r_2);
+//    debug("radius2 %f\n", r_2);
     flux = flux / (M_PI * r_2);
-    return flux;// / NUM_OF_COLLECT_PHOTONS;
+    return flux;
 }
 
 Color Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, int x, int y)
@@ -666,10 +680,16 @@ Color *Scene::Render(KdTree<photon,L2Norm_2,GetDim,3,float> *kd)
 {
     Color * result = new Color[cam.imgWidth * cam.imgHeight];
     // iterate over the pixels & set colour values
+    //#pragma omp parallel for schedule(dynamic)
+
     for (int x = 0; x < cam.imgWidth; x++)
     {
+        float perc = (float) x / cam.imgWidth * 100;
+        fprintf(stdout,"\rRendering: %1.0f Samples per Pixel %8.2f%%", m_samples_per_pixel, (double)perc);
+
         for (int y = 0; y < cam.imgHeight; y++)
         {
+
             result[x + y * cam.imgWidth] = Render(kd, x, y);
         }
     }
@@ -799,8 +819,9 @@ Scene *Scene::cornellBoxScene(int width, int height)
 
     scene.cam = cam;
     float img_plane_w = 0.5f;
-    cam.m_view = Matrix4x4::translation(Vector3D(0,0,0));
-    cam.m_view = cam.m_view.rotation(M_PI, 'y');
+    cam.m_view = Matrix4x4::translation(Vector3D(0, 0,0));
+    cam.m_view = Matrix4x4::rotation(M_PI, 'y');
+    //cam.m_view = Matrix4x4::rotation(0.025f, 'x') * cam.m_view;
 
     scene.imgPlane = cam.calc_img_plane();
     for (int y = 0; y < 4; y++)
@@ -808,16 +829,11 @@ Scene *Scene::cornellBoxScene(int width, int height)
         debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
     }
 
-    scene.imgPlane = new Plane(Point3D(-img_plane_w, img_plane_w, -1), Point3D(-img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, -img_plane_w, -1), Point3D(img_plane_w, img_plane_w, -1));
-    for (int y = 0; y < 4; y++)
-    {
-        debug("%f %f %f\n", scene.imgPlane->points[y][0], scene.imgPlane->points[y][1], scene.imgPlane->points[y][2], scene.imgPlane->points[y][3]);
-    }
-
-    Material *mat_ceil = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 10, Color(0, 0, 0));
-    Material *mat_grn = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
-    Material *mat_red = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_ceil  = new Material(Color(0, 0, 0), Color(1, 1, 1), Color(0, 0, 0), 1, Color(0, 0, 0));
+    Material *mat_grn   = new Material(Color(0, 0, 0), Color(0, 0.5f, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
+    Material *mat_red   = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(0, 0, 0), 10, Color(0, 0, 0));
     Material *mat_light = new Material(Color(0, 0, 0), Color(0.5f, 0, 0), Color(1, 1, 1), 10, Color(0, 0, 0));
+    Material *mat_shiny = new Material(Color(0, 0, 0), Color(0,0,0), Color(1, 1, 1), 10, Color(1,1,1));
     Material *mat_floor = new Material(Color(0, 0, 0), Color(0.6f, 0.6f, 0.6f), Color(0, 0, 0), 10, Color(0, 0, 0));
 
     // Ceiling
@@ -838,7 +854,7 @@ Scene *Scene::cornellBoxScene(int width, int height)
         Point3D(0.653, 2.74, -7.224),
         mat_light);
 
-    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 125, light_q);
+    LightObject *l_obj = new LightObject(Point3D(0, 2.65, -8), Color(1, 1, 1), 20, light_q);
     scene.lights.push_back(l_obj);
 
     // Green wall on left
@@ -877,30 +893,29 @@ Scene *Scene::cornellBoxScene(int width, int height)
         mat_floor);
     scene.objects.push_back(q_5);
 
-    Cube *sml_cube = new Cube(
+    Cube *big_cube = new Cube(
         Point3D(0, 0, 0),
         0.5,
         mat_ceil
     );
-    sml_cube->Transform(
+    big_cube->Transform(
         Matrix4x4::translation(Vector3D(-0.929, -2.75 + 3.31 / 2, -8.482)) *
         Matrix4x4::rotation(misc::degToRad(-18.809), 'y') *
         Matrix4x4::scaling(Vector3D(1.659, 3.31, 1.659))
     );
-    scene.objects.push_back(sml_cube);
+    scene.objects.push_back(big_cube);
 
-    Cube *big_cube = new Cube(
+    Cube *sml_cube = new Cube(
         Point3D(0,0,0),
         0.5,
-        mat_ceil
+        mat_shiny
     );
-    big_cube->Transform(
+    sml_cube->Transform(
         Matrix4x4::translation(Vector3D(0.933, -2.75 + 1.655 / 2, -6.648)) *
         Matrix4x4::rotation(misc::degToRad(16.303), 'y') *
         Matrix4x4::scaling(Vector3D(1.655, 1.655, 1.655))
     );
-    scene.objects.push_back(big_cube);
-    //scene.Transform(Matrix4x4::rotation(M_PI, 'y'));
+    scene.objects.push_back(sml_cube);
     return s;
 }
 

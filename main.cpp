@@ -8,8 +8,8 @@
 #include "kdtree/kdtree.h"
 #include "misc.h"
 
-#define DEF_WIDTH   250
-#define DEF_HEIGHT  250
+#define DEF_WIDTH   750
+#define DEF_HEIGHT  750
 
 double clamp(double min, double max, double in)
 {
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 
     vector<photon*> photon_map;
-    scene.emit_photons(200000, &photon_map);
+    scene.emit_photons(1000000, &photon_map);
 
     normal_render(scene, "standard");
     render_photons(scene, &photon_map, "photons");
