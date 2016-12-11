@@ -12,7 +12,6 @@ struct photon {
     Color color;         // power packed as 4 chars
     double power;
     unsigned char phi, theta;   // compressed incident direction
-    short flag;                 // flag used in kdtree
 
     photon(){}
 

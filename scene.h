@@ -32,6 +32,9 @@ struct GetDim{
         return n1.y;
     case 3:
         return n1.z;
+    default:
+        printf("incorrect dim parameter\n");
+        throw -1;
     }
    }
 };

@@ -34,7 +34,7 @@ KdTree<photon,L2Norm_2,GetDim,3,float>* make_kdtree(vector<photon*> *photon_map)
     return kd;
 }
 
-void render_photons(Scene scene, vector<photon*> *photon_map, const char* outputStr)
+void render_photons(Scene &scene, vector<photon*> *photon_map, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
@@ -42,11 +42,11 @@ void render_photons(Scene scene, vector<photon*> *photon_map, const char* output
     Color *resultImg = scene.Render(photon_map);
 
     misc::save_color_image(outputStr, resultImg, width, height);
-    delete (resultImg);
+    delete [] resultImg;
 }
 
 
-void normal_render(Scene scene, const char* outputStr)
+void normal_render(Scene &scene, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
@@ -58,10 +58,10 @@ void normal_render(Scene scene, const char* outputStr)
     Color *resultImg = scene.Render();
 
     misc::save_color_image(outputStr, resultImg, width, height);
-    delete (resultImg);
+    delete [] resultImg;
 }
 
-void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
+void final_render(Scene &scene, vector<photon*> *photons, const char* outputStr)
 {
     int width = scene.cam.imgWidth;
     int height = scene.cam.imgHeight;
@@ -70,7 +70,7 @@ void final_render(Scene scene, vector<photon*> *photons, const char* outputStr)
     Color *resultImg = scene.Render(tree);
 
     misc::save_color_image(outputStr, resultImg, width, height);
-    delete (resultImg);
+    delete [] resultImg;
 }
 
 int main(int argc, char *argv[])
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 
     vector<photon*> photon_map;
-    scene.emit_photons(10000, &photon_map);
+    scene.emit_photons(200000, &photon_map);
 
     normal_render(scene, "standard");
     render_photons(scene, &photon_map, "photons");

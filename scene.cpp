@@ -58,25 +58,12 @@ void LightObject::emit_photons(int to_emit, float energy, vector<photon*> *out_p
     int num_emit = 0;
     while (num_emit < to_emit)
     {
-        double x;
-        double y;
-        double z;
-
         Vector3D norm;
         Point3D p_pos;
         obj->point_on_surface(p_pos, norm);
         norm.normalize();
 
-        Vector3D dir;
-        do
-        {
-            x = misc::RAND_1();
-            y = misc::RAND_1();
-            z = misc::RAND_1();
-            dir = Vector3D(x, y, z);
-        }
-        while (dir.length2() > 1 || dir.dot(norm) < 0);
-        dir.normalize();
+        Vector3D dir = HemisphereSampling(norm);
 
         photon *p = new photon(p_pos, dir, clr, energy);
 
@@ -149,7 +136,7 @@ Vector3D HemisphereSampling(Vector3D m_normal)
     float r_1 = misc::RAND_2();
     float r_2 = misc::RAND_2();
 
-    float r = sqrt(1 - r_1 * r_2);
+    float r = sqrt(1 - r_1 * r_1);
     float phi = 2 * M_PI * r_2;
 
     double vx = cos(phi) * r;
@@ -473,8 +460,10 @@ void Scene::trace_photon(photon *in_pho, int depth, vector<photon*> *out_list)
     if (i_clr.R() <= 0.01 &&
         i_clr.G() <= 0.01 &&
         i_clr.B() <= 0.01)
+    {
+        delete store_photon;
         return;
-
+    }
     out_list->push_back(store_photon);
 
     bounce_photon(ray_type, &i_point, &i_normal, &i_reflect, &i_refract, &i_clr, store_photon->power, depth, out_list);
@@ -592,7 +581,7 @@ Color Scene::BRDF(SurfacePoint x, Vector3D view, Vector3D pd)
     return (diff + spec);
 }
 
-#define NUM_OF_COLLECT_PHOTONS 10
+#define NUM_OF_COLLECT_PHOTONS 500
 
 Color Scene::radiance_estimate(KdTree<photon,L2Norm_2,GetDim,3,float> *kd, SurfacePoint end_pt)
 {

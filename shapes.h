@@ -120,6 +120,12 @@ public:
         return "Quad";
     }
 
+    ~Quad()
+    {
+        delete [] tris;
+        delete [] points;
+    }
+
     Quad(Point3D a, Point3D b, Point3D c, Point3D d, Material *mat)
     {
         points = new Point3D[4] {a,b,c,d};
@@ -250,6 +256,10 @@ public:
     char const *type()
     {
         return "Cube";
+    }
+
+    ~Cube(void) {
+        delete [] faces;
     }
 
     Cube(Point3D center, float scale, Material *mat)
