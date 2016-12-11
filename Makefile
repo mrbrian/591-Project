@@ -2,6 +2,9 @@
 CC=g++
 CFLAGS=-c -std=c++11 -Ilodepng
 
+all: algebra.o misc.o polyroots.o scene.o camera.o photon.o material.o lodepng.o main.o
+	$(CC) algebra.o misc.o polyroots.o scene.o camera.o photon.o material.o lodepng.o main.o -o project
+
 algebra.o: algebra.cpp
 	$(CC) $(CFLAGS) $(LDFLAGS) algebra.cpp 
 
@@ -28,8 +31,4 @@ main.o: main.cpp
 
 lodepng.o: lodepng/lodepng.cpp
 	$(CC) $(CFLAGS) lodepng/lodepng.cpp -o lodepng.o
-
-all: algebra.o misc.o polyroots.o scene.o camera.o photon.o material.o lodepng.o main.o
-	$(CC) algebra.o misc.o polyroots.o scene.o camera.o photon.o material.o lodepng.o main.o -o project
-
 
