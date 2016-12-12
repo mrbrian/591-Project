@@ -1,3 +1,5 @@
+
+#include <time.h>
 #include <stdio.h>
 #include <assert.h>
 #include "lodepng.h"
@@ -91,13 +93,21 @@ int main(int argc, char *argv[])
 
     scene = *Scene::cornellBoxScene(width, height);
 
+    // start timing...
+    clock_t start = clock();
 
     vector<photon*> photon_map;
-    scene.emit_photons(1000000, &photon_map);
+    scene.emit_photons(100000, &photon_map);
 
     normal_render(scene, "standard");
     render_photons(scene, &photon_map, "photons");
     final_render(scene, &photon_map, "final");
+
+    // stop timing
+    clock_t end = clock();
+
+    double t = (double)(end-start)/CLOCKS_PER_SEC;
+    printf("\nRendering Time: %fs.\n",t);
 
     // application successfully returned
     return 0;
