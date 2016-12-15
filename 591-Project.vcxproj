@@ -75,7 +75,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>lodepng</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lodepng;kdtree</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,16 +113,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="algebra.cpp" />
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="lodepng\lodepng.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="material.cpp" />
+    <ClCompile Include="misc.cpp" />
+    <ClCompile Include="photon.cpp" />
     <ClCompile Include="polyroots.cpp" />
     <ClCompile Include="scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algebra.h" />
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="kdtree\kdtree.h" />
+    <ClInclude Include="kdtree\kdtree.hxx" />
     <ClInclude Include="lodepng\lodepng.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="misc.h" />
     <ClInclude Include="photon.h" />
     <ClInclude Include="polyroots.h" />
     <ClInclude Include="scene.h" />

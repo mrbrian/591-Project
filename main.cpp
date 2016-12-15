@@ -2,7 +2,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <assert.h>
-#include "lodepng.h"
 #include "algebra.h"
 #include "scene.h"
 #include <vector>
@@ -99,9 +98,9 @@ int main(int argc, char *argv[])
     vector<photon*> photon_map;
     scene.emit_photons(100000, &photon_map);
 
-    normal_render(scene, "standard");
-    render_photons(scene, &photon_map, "photons");
-    final_render(scene, &photon_map, "final");
+    normal_render(scene, "standard.png");
+    render_photons(scene, &photon_map, "photons.png");
+    final_render(scene, &photon_map, "final.png");
 
     // stop timing
     clock_t end = clock();
