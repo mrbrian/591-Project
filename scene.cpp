@@ -3,7 +3,7 @@
 //#define DEBUG 1
 //#define debugging_enabled 1
 
-const double m_samples_per_pixel = 50;
+const double m_samples_per_pixel = 10;
 
 #ifdef DEBUG
 #define debug(fmt, ...)  do { \
@@ -74,13 +74,13 @@ void LightObject::emit_photons(int to_emit, float energy, vector<photon*> *out_p
         Vector3D dir;
         do
         {
-            x = 0.5f * misc::RAND_1();
-            y = misc::RAND_2() * -50.0f - 0.5f;
-            z = 0.5f * misc::RAND_1();
+            x = misc::RAND_1();
+            y = misc::RAND_1();
+            z = misc::RAND_1();
             dir = Vector3D(x, y, z);
         }
         while (dir.length2() > 1);
-        dir = norm;//.normalize();
+        dir.normalize();
 
         photon *p = new photon(p_pos, dir, clr, energy);
 
